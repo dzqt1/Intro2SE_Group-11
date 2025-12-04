@@ -4,7 +4,7 @@ import Test from './pages/tobedev'
 import Side_Navbar from '@/components/custom/Side_Navbar'
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
-
+import Orders from './pages/Order'
 function App() {
   return (
     <>
@@ -13,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/demo" element={<DemoPage />} />
         <Route path="*" element={<Test />} />
+        <Route path="/orders" element={<Orders />} />
       </Routes>
     </div>
     </>

@@ -6,7 +6,8 @@ import e2eLogo from "@/assets/e2e.svg";
 import { 
     LayoutGrid, 
     FlaskConical,
-    Users 
+    Users,
+    NotebookPen,
 } from "lucide-react";
 
 export default function Side_Navbar() {
@@ -14,6 +15,7 @@ export default function Side_Navbar() {
     const items = [
         { name: "Demo", icon: <FlaskConical className={iconStyle} />, path: "/demo" },
         { name: "User Management", icon: <Users className={iconStyle} />, path: "/users" },
+        { name: "Order Management", icon: <NotebookPen className={iconStyle} />, path: "/orders"}
     ]
 
 	return (

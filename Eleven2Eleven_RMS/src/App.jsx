@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import DemoPage from './pages/DemoPage'
-import Test from './pages/tobedev'
+import UserManagement from './pages/UserManagement'
 import Side_Navbar from '@/components/custom/Side_Navbar'
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
@@ -14,6 +14,7 @@ function App() {
         <Route path="/demo" element={<DemoPage />} />
         <Route path="*" element={<Test />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/user_management" element={<UserManagement />} />
       </Routes>
     </div>
     </>

@@ -12,7 +12,6 @@ function App() {
       <Side_Navbar />
       <Routes>
         <Route path="/demo" element={<DemoPage />} />
-        <Route path="*" element={<Test />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/user_management" element={<UserManagement />} />
       </Routes>

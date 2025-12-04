@@ -6,6 +6,7 @@ import './App.css'
 import { Routes, Route } from 'react-router-dom'
 import Orders from './pages/Order'
 import Login from './pages/Login'
+import MenuManagement from './pages/MenuManagement'
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/demo" element={<DemoPage />} />
         <Route path="/orders" element={<Orders />} />
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/menu" element={<MenuManagement />} />
       </Routes>
     </div>
     </>

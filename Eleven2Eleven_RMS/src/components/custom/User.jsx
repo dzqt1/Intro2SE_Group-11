@@ -1,10 +1,12 @@
 import { Separator } from "@radix-ui/react-separator";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-
-export default function User(data) {
-    const mockUsers = { id: 1, name: "John Doe", email: "john.doe@example.com", role: "Admin" }
-    let user = mockUsers
+import {
+    ShieldUser,
+    User,
+    UserPen,
+} from "lucide-react";
+export default function UserLayout({ user }) {
     return (
         <Card className="w-full p-6">
             <div className="flex flex-row gap-4">

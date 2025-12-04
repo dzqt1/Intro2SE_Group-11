@@ -1,9 +1,15 @@
-import User from "@/components/custom/User";
+import UserLayout from "@/components/custom/User";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupInput, InputGroupAddon } from "@/components/ui/input-group";
 import { Search } from "lucide-react";
  
 export default function UserManagement() {
+    const mockUsers = [
+        { id: 1, name: "John Doe", email: "john.doe@example.com", role: "Admin" },
+        { id: 2, name: "Jane Smith", email: "jane.smith@example.com", role: "Manager" },
+        { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", role: "Waiter" },
+        { id: 4, name: "Alice Williams", email: "alice.williams@example.com", role: "Kitchen Staff" }
+    ]
     return (
         <main className="p-8 flex-1 bg-gray-100 min-h-screen w-full h-full">
             <h1 className="text-3xl font-bold mb-4">User Management</h1>
@@ -19,7 +25,9 @@ export default function UserManagement() {
                     Add user
                 </Button>
             </div>
-            <User />
+            {mockUsers.map(user =>
+                <UserLayout user={user} />
+            )}
         </main>
     )
 }

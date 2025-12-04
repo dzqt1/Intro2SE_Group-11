@@ -5,15 +5,18 @@ import Side_Navbar from '@/components/custom/Side_Navbar'
 import './App.css'
 import { Routes, Route } from 'react-router-dom'
 import Orders from './pages/Order'
+import Login from './pages/Login'
+
 function App() {
   return (
     <>
     <div className="flex flex-row h-screen">
       <Side_Navbar />
       <Routes>
+        <Route path="/" element={<Login />} />
         <Route path="/demo" element={<DemoPage />} />
         <Route path="/orders" element={<Orders />} />
-        <Route path="/user_management" element={<UserManagement />} />
+        <Route path="/users" element={<UserManagement />} />
       </Routes>
     </div>
     </>

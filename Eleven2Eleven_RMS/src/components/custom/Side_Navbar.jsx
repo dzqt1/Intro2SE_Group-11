@@ -16,6 +16,7 @@ export default function Side_Navbar() {
         { name: "Demo", icon: <FlaskConical className={iconStyle} />, path: "/demo" },
         { name: "User Management", icon: <Users className={iconStyle} />, path: "/users" },
         { name: "Order Management", icon: <NotebookPen className={iconStyle} />, path: "/orders"},
+        { name: "Order Statement", icon: <NotebookPen className={iconStyle} />, path: "/kitchen"},
     ]
     const active_user = {name: "Hai Le", role: "Manager"};
 

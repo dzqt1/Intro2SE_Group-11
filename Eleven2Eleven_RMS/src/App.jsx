@@ -13,19 +13,19 @@ import IngredientManagement from './pages/IngredientManagement'
 
 function App() {
   return (
-    <>
-    <div className="flex flex-row h-screen">
-      <Side_Navbar />
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/demo" element={<DemoPage />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/users" element={<UserManagement />} />
-        <Route path="/menu" element={<MenuManagement />} />
-        <Route path="/ingredients" element={<IngredientManagement />} />
-      </Routes>
-    </div>
-    </>
+    <OrderProvider>
+      <div className="flex flex-row h-screen">
+        <Side_Navbar />
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route path="/demo" element={<DemoPage />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/users" element={<UserManagement />} />
+          <Route path="/menu" element={<MenuManagement />} />
+          <Route path="/ingredients" element={<IngredientManagement />} />
+        </Routes>
+      </div>
+    </OrderProvider>
   )
 }
 

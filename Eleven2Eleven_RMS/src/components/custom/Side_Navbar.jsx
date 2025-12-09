@@ -9,6 +9,7 @@ import {
     Users,
     NotebookPen,
     Coffee,
+    Package,
 } from "lucide-react";
 
 export default function Side_Navbar() {
@@ -18,7 +19,9 @@ export default function Side_Navbar() {
         { name: "User Management", icon: <Users className={iconStyle} />, path: "/users" },
         { name: "Order Management", icon: <NotebookPen className={iconStyle} />, path: "/orders"},
         { name: "Order Statement", icon: <NotebookPen className={iconStyle} />, path: "/kitchen"},
-        { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},    ]
+        { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},
+        { name: "Ingredient Management", icon: <Package className={iconStyle} />, path: "/ingredients"},
+    ]
     const active_user = {name: "Hai Le", role: "Manager"};
 
 	return (

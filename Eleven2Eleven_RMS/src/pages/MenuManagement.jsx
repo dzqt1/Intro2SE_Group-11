@@ -235,7 +235,7 @@ export default function MenuManagement() {
                 </select>
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-700">Price (VNĐ)</Label>
+                <Label className="text-sm font-medium text-gray-700">Price ($)</Label>
                 <Input
                   placeholder="e.g., 25000"
                   type="number"
@@ -305,7 +305,7 @@ export default function MenuManagement() {
                     </div>
                     <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-blue-600 font-semibold">{item.price.toLocaleString('vi-VN')}đ</span>
+                      <span className="text-blue-600 font-semibold">${item.price}</span>
                       <span className="text-sm text-gray-500">{item.category}</span>
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Prep time: {item.preparationTime} min</p>

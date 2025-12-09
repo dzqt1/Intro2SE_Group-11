@@ -114,17 +114,17 @@ export default function IngredientManagement() {
   }
 
   return (
-    <div className="flex-1 p-6 bg-gray-50 overflow-auto">
-      <div className="max-w-7xl">
+    <div className="flex-1 p-3 bg-gray-50 overflow-auto">
+      <div className="max-w-full mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Ingredient Management</h1>
-          <p className="text-gray-600">Manage restaurant ingredients and inventory</p>
+        <div className="mb-3">
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Ingredient Management</h1>
+          <p className="text-gray-600 text-sm">Manage restaurant ingredients and inventory</p>
         </div>
 
         {/* Action Bar */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex gap-4">
+        <div className="flex flex-col gap-2 mb-3">
+          <div className="flex gap-2">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -132,51 +132,53 @@ export default function IngredientManagement() {
                   placeholder="Search ingredients..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-9"
                 />
               </div>
             </div>
             <Button
               onClick={handleAddClick}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1 h-9 text-sm px-3"
             >
-              <Plus className="w-5 h-5" />
-              Add Ingredient
+              <Plus className="w-4 h-4" />
+              Add
             </Button>
           </div>
         </div>
 
         {/* Form */}
         {showForm && (
-          <Card className="mb-6 p-6">
-            <h2 className="text-xl font-bold mb-4">
+          <Card className="mb-3 p-3">
+            <h2 className="text-base font-bold mb-2">
               {editingId ? 'Edit Ingredient' : 'Add New Ingredient'}
             </h2>
-            <Separator className="mb-4" />
+            <Separator className="mb-2" />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-2">
               <div>
-                <Label className="text-sm font-medium">Ingredient Name *</Label>
+                <Label className="text-xs font-medium">Name *</Label>
                 <Input
                   name="name"
                   value={newItem.name}
                   onChange={handleInputChange}
                   placeholder="e.g., Chicken"
+                  className="h-8 text-sm"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium">Unit *</Label>
+                <Label className="text-xs font-medium">Unit *</Label>
                 <Input
                   name="unit"
                   value={newItem.unit}
                   onChange={handleInputChange}
                   placeholder="e.g., gram, ml, piece"
+                  className="h-8 text-sm"
                 />
               </div>
 
               <div>
-                <Label className="text-sm font-medium">Quantity</Label>
+                <Label className="text-xs font-medium">Qty</Label>
                 <Input
                   type="number"
                   name="quantity"
@@ -184,22 +186,24 @@ export default function IngredientManagement() {
                   onChange={handleInputChange}
                   placeholder="0"
                   step="0.01"
+                  className="h-8 text-sm"
                 />
               </div>
             </div>
 
-            <Separator className="my-4" />
+            <Separator className="my-2" />
 
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-1 justify-end">
               <Button
                 variant="outline"
                 onClick={handleCancel}
+                className="h-8 text-xs px-2"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-blue-600 hover:bg-blue-700 text-white h-8 text-xs px-2"
               >
                 {editingId ? 'Update' : 'Add'}
               </Button>
@@ -208,54 +212,54 @@ export default function IngredientManagement() {
         )}
 
         {/* Ingredients Table */}
-        <Card>
+        <Card className="mb-3">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-100 border-b">
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">ID</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Ingredient Name</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Unit</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Quantity</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">Actions</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-900">ID</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Name</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Unit</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Qty</th>
+                  <th className="px-2 py-1.5 text-left text-xs font-semibold text-gray-900">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredIngredients.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan="5" className="px-2 py-3 text-center text-gray-500 text-xs">
                       No ingredients found
                     </td>
                   </tr>
                 ) : (
                   filteredIngredients.map(item => (
                     <tr key={item.id} className="border-b hover:bg-gray-50 transition">
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                      <td className="px-2 py-1.5 text-xs font-medium text-gray-900">{item.id}</td>
+                      <td className="px-2 py-1.5 text-xs text-gray-600">{item.name}</td>
+                      <td className="px-2 py-1.5 text-xs text-gray-600">
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
                           {item.unit}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{item.quantity}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <div className="flex gap-2">
+                      <td className="px-2 py-1.5 text-xs text-gray-600">{item.quantity}</td>
+                      <td className="px-2 py-1.5 text-xs">
+                        <div className="flex gap-1">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleEditClick(item)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center gap-1"
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center gap-0.5 px-1.5 py-0.5 text-xs h-auto"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3" />
                             Edit
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleDelete(item.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-1"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center gap-0.5 px-1.5 py-0.5 text-xs h-auto"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                             Delete
                           </Button>
                         </div>
@@ -269,14 +273,14 @@ export default function IngredientManagement() {
         </Card>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          <Card className="p-4">
-            <p className="text-gray-600 text-sm">Total Ingredients</p>
-            <p className="text-2xl font-bold text-gray-900">{ingredients.length}</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          <Card className="p-2">
+            <p className="text-gray-600 text-xs">Total</p>
+            <p className="text-base font-bold text-gray-900">{ingredients.length}</p>
           </Card>
-          <Card className="p-4">
-            <p className="text-gray-600 text-sm">Displayed Items</p>
-            <p className="text-2xl font-bold text-gray-900">{filteredIngredients.length}</p>
+          <Card className="p-2">
+            <p className="text-gray-600 text-xs">Displayed</p>
+            <p className="text-base font-bold text-gray-900">{filteredIngredients.length}</p>
           </Card>
         </div>
       </div>

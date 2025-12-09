@@ -130,7 +130,7 @@ export default function IngredientManagement() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Search ingredients by name or supplier..."
+                  placeholder="Tìm kiếm nguyên liệu..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -142,7 +142,7 @@ export default function IngredientManagement() {
               className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
             >
               <Plus className="w-5 h-5" />
-              Add Ingredient
+              Thêm Nguyên Liệu
             </Button>
           </div>
         </div>
@@ -151,18 +151,18 @@ export default function IngredientManagement() {
         {showForm && (
           <Card className="mb-6 p-6">
             <h2 className="text-xl font-bold mb-4">
-              {editingId ? 'Edit Ingredient' : 'Add New Ingredient'}
+              {editingId ? 'Chỉnh Sửa Nguyên Liệu' : 'Thêm Nguyên Liệu Mới'}
             </h2>
             <Separator className="mb-4" />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label className="text-sm font-medium">Name *</Label>
+                <Label className="text-sm font-medium">Tên Nguyên Liệu *</Label>
                 <Input
                   name="name"
                   value={newItem.name}
                   onChange={handleInputChange}
-                  placeholder="e.g., Chicken Breast"
+                  placeholder="Ví dụ: Thịt gà"
                 />
               </div>
 

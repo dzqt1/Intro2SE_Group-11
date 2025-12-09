@@ -8,39 +8,78 @@ import { Trash2, Plus, Search, Filter, Edit, Eye, EyeOff } from 'lucide-react'
 
 export default function MenuManagement() {
   const [menuItems, setMenuItems] = useState([
-    {
-      id: 1,
-      name: 'Black Coffee',
-      description: 'Traditional Vietnamese black coffee',
-      price: 25000,
-      category: 'Drinks',
-      available: true,
-      preparationTime: 5,
-      image: null
-    },
-    {
-      id: 2,
-      name: 'Milk Coffee',
-      description: 'Coffee with condensed milk',
-      price: 30000,
-      category: 'Drinks',
-      available: true,
-      preparationTime: 7,
-      image: null
-    },
-    {
-      id: 3,
-      name: 'Beef Sandwich',
-      description: 'Grilled beef with vegetables',
-      price: 45000,
-      category: 'Food',
-      available: true,
-      preparationTime: 15,
-      image: null
-    }
+    // Breakfast
+    { id: 1, name: 'Berries', description: 'Fresh berries bowl', price: 12, category: 'Breakfast', available: true, preparationTime: 5 },
+    { id: 2, name: 'Cold Cereal', description: 'Chilled breakfast cereal', price: 13, category: 'Breakfast', available: true, preparationTime: 3 },
+    { id: 3, name: 'Cottage Cheese', description: 'Fresh cottage cheese', price: 12, category: 'Breakfast', available: true, preparationTime: 2 },
+    { id: 4, name: 'Eggs', description: 'Fried eggs', price: 8, category: 'Breakfast', available: true, preparationTime: 8 },
+    { id: 5, name: 'Green Tea', description: 'Hot green tea', price: 14, category: 'Breakfast', available: true, preparationTime: 3 },
+    { id: 6, name: 'Oatmeal', description: 'Warm oatmeal', price: 12, category: 'Breakfast', available: true, preparationTime: 5 },
+    { id: 7, name: 'Peanut Butter', description: 'Toast with peanut butter', price: 11, category: 'Breakfast', available: true, preparationTime: 4 },
+
+    // Salad
+    { id: 8, name: 'Antipasto Salad', description: 'Italian antipasto mix', price: 12, category: 'Salad', available: true, preparationTime: 8 },
+    { id: 9, name: 'BBQ Pork Salad', description: 'BBQ pork with greens', price: 13, category: 'Salad', available: true, preparationTime: 10 },
+    { id: 10, name: 'Broccoli Rapa', description: 'Sautéed broccoli rapa', price: 12, category: 'Salad', available: true, preparationTime: 7 },
+    { id: 11, name: 'Caesar Salad', description: 'Classic caesar salad', price: 8, category: 'Salad', available: true, preparationTime: 6 },
+    { id: 12, name: 'Chicken Salad', description: 'Grilled chicken salad', price: 14, category: 'Salad', available: true, preparationTime: 9 },
+    { id: 13, name: 'Crispy Salad', description: 'Crispy mixed vegetables', price: 12, category: 'Salad', available: true, preparationTime: 8 },
+    { id: 14, name: 'Ponir Mix Salad', description: 'Mixed paneer salad', price: 11, category: 'Salad', available: true, preparationTime: 7 },
+
+    // Rice Bowl
+    { id: 15, name: 'Butter Chicken Rice', description: 'Creamy butter chicken over rice', price: 12, category: 'Rice Bowl', available: true, preparationTime: 12 },
+    { id: 16, name: 'Chicken Biryani', description: 'Fragrant chicken biryani', price: 13, category: 'Rice Bowl', available: true, preparationTime: 15 },
+    { id: 17, name: 'Beef Biryani', description: 'Spiced beef biryani', price: 12, category: 'Rice Bowl', available: true, preparationTime: 15 },
+    { id: 18, name: 'Rice Beef', description: 'Beef with fried rice', price: 8, category: 'Rice Bowl', available: true, preparationTime: 10 },
+    { id: 19, name: 'Veg Biryani', description: 'Vegetable biryani', price: 11, category: 'Rice Bowl', available: true, preparationTime: 12 },
+    { id: 20, name: 'Plain Rice', description: 'Steamed plain rice', price: 11, category: 'Rice Bowl', available: true, preparationTime: 5 },
+
+    // Chicken
+    { id: 21, name: 'Finger Chicken', description: 'Fried chicken fingers', price: 12, category: 'Chicken', available: true, preparationTime: 10 },
+    { id: 22, name: 'Chicken Grilled', description: 'Grilled chicken breast', price: 13, category: 'Chicken', available: true, preparationTime: 12 },
+    { id: 23, name: 'Chicken Grilled with Butter', description: 'Butter grilled chicken', price: 12, category: 'Chicken', available: true, preparationTime: 13 },
+    { id: 24, name: 'Chicken Wrap', description: 'Chicken in tortilla wrap', price: 8, category: 'Chicken', available: true, preparationTime: 8 },
+    { id: 25, name: 'Chicken Marsala', description: 'Chicken in marsala sauce', price: 14, category: 'Chicken', available: true, preparationTime: 14 },
+    { id: 26, name: 'Chicken Francese', description: 'Chicken francese style', price: 12, category: 'Chicken', available: true, preparationTime: 12 },
+    { id: 27, name: 'Chicken Prame', description: 'Chicken prame preparation', price: 11, category: 'Chicken', available: true, preparationTime: 11 },
+
+    // Crazy Beef
+    { id: 28, name: 'BBQ Beef', description: 'BBQ beef platter', price: 12, category: 'Crazy Beef', available: true, preparationTime: 12 },
+    { id: 29, name: 'Beef Fries', description: 'Beef with crispy fries', price: 13, category: 'Crazy Beef', available: true, preparationTime: 10 },
+    { id: 30, name: 'Beef Burger', description: 'Classic beef burger', price: 12, category: 'Crazy Beef', available: true, preparationTime: 10 },
+    { id: 31, name: 'Beef Grilled', description: 'Grilled beef steak', price: 8, category: 'Crazy Beef', available: true, preparationTime: 12 },
+    { id: 32, name: 'Beef Meal', description: 'Complete beef meal', price: 14, category: 'Crazy Beef', available: true, preparationTime: 14 },
+    { id: 33, name: 'Beef Meat Steak', description: 'Premium beef steak', price: 14, category: 'Crazy Beef', available: true, preparationTime: 15 },
+    { id: 34, name: 'Beef Bogorok', description: 'Beef bogorok style', price: 11, category: 'Crazy Beef', available: true, preparationTime: 11 },
+
+    // Burger
+    { id: 35, name: 'Luger Burger', description: 'Juicy luger burger', price: 12, category: 'Burger', available: true, preparationTime: 10 },
+    { id: 36, name: 'Le Pigeon Burger', description: 'Le pigeon special burger', price: 13, category: 'Burger', available: true, preparationTime: 11 },
+    { id: 37, name: 'Double Animal Style', description: 'Double beef animal style', price: 12, category: 'Burger', available: true, preparationTime: 11 },
+    { id: 38, name: 'The Original Burger', description: 'Original classic burger', price: 8, category: 'Burger', available: true, preparationTime: 9 },
+    { id: 39, name: 'Whiskey King Burger', description: 'Whiskey king special', price: 14, category: 'Burger', available: true, preparationTime: 12 },
+    { id: 40, name: 'The Company Burger', description: 'Company signature burger', price: 12, category: 'Burger', available: true, preparationTime: 10 },
+    { id: 41, name: 'Dyer\'s Deep-Fried Burger', description: 'Deep fried burger', price: 12, category: 'Burger', available: true, preparationTime: 11 },
+    { id: 42, name: 'The Lola Burger', description: 'Lola special burger', price: 11, category: 'Burger', available: true, preparationTime: 10 },
+
+    // Cake
+    { id: 43, name: 'Black Forest Gateau', description: 'Classic black forest cake', price: 12, category: 'Cake', available: true, preparationTime: 3 },
+    { id: 44, name: 'Pineapple Cake', description: 'Fresh pineapple cake', price: 11, category: 'Cake', available: true, preparationTime: 3 },
+    { id: 45, name: 'Eggless Truffle Cake', description: 'Eggless chocolate truffle', price: 11, category: 'Cake', available: true, preparationTime: 2 },
+    { id: 46, name: 'Coffee Cake with Mocha Frosting', description: 'Coffee cake with mocha', price: 13, category: 'Cake', available: true, preparationTime: 3 },
+    { id: 47, name: 'Fudgy Chocolate Cake', description: 'Fudgy chocolate delight', price: 11, category: 'Cake', available: true, preparationTime: 3 },
+    { id: 48, name: 'Mango Meringue Cake', description: 'Mango meringue cake', price: 12, category: 'Cake', available: true, preparationTime: 3 },
+
+    // Juice
+    { id: 49, name: 'Orange Juice', description: 'Fresh orange juice', price: 12, category: 'Juice', available: true, preparationTime: 2 },
+    { id: 50, name: 'Lemonade', description: 'Fresh lemonade', price: 8, category: 'Juice', available: true, preparationTime: 2 },
+    { id: 51, name: 'Apple Juice', description: 'Fresh apple juice', price: 13, category: 'Juice', available: true, preparationTime: 2 },
+    { id: 52, name: 'Grape Juice', description: 'Fresh grape juice', price: 15, category: 'Juice', available: true, preparationTime: 2 },
+    { id: 53, name: 'Pineapple Juice', description: 'Fresh pineapple juice', price: 14, category: 'Juice', available: true, preparationTime: 2 },
+    { id: 54, name: 'Cranberry Juice', description: 'Fresh cranberry juice', price: 16, category: 'Juice', available: true, preparationTime: 2 }
   ])
 
-  const [categories] = useState(['All', 'Drinks', 'Food', 'Desserts', 'Snacks'])
+  const [categories] = useState(['All', 'Breakfast', 'Salad', 'Rice Bowl', 'Chicken', 'Crazy Beef', 'Burger', 'Cake', 'Juice'])
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -49,7 +88,7 @@ export default function MenuManagement() {
     name: '',
     description: '',
     price: '',
-    category: 'Drinks',
+    category: 'Breakfast',
     preparationTime: '',
     available: true
   })
@@ -80,7 +119,7 @@ export default function MenuManagement() {
         name: '',
         description: '',
         price: '',
-        category: 'Drinks',
+        category: 'Breakfast',
         preparationTime: '',
         available: true
       })
@@ -117,7 +156,7 @@ export default function MenuManagement() {
       name: '',
       description: '',
       price: '',
-      category: 'Drinks',
+      category: 'Breakfast',
       preparationTime: '',
       available: true
     })

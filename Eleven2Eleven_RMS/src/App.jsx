@@ -23,6 +23,7 @@ function App() {
           <Route path="/users" element={<UserManagement />} />
           <Route path="/menu" element={<MenuManagement />} />
           <Route path="/ingredients" element={<IngredientManagement />} />
+          <Route path="/kitchen" element={<Kitchen />} />
         </Routes>
       </div>
     </OrderProvider>

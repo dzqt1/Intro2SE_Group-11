@@ -13,7 +13,7 @@ export default function TableInfo() {
     return (
       <div className="flex flex-col items-center justify-center w-full min-h-screen bg-gray-50 text-gray-500">
         <p className="text-xl font-medium">No reservations found.</p>
-        <p className="text-sm mt-2">Please go to "New Reservation" to create a new one.</p>
+        <p className="text-sm mt-2">Please go to "Table Reservation" to create a new one.</p>
       </div>
     );
   }

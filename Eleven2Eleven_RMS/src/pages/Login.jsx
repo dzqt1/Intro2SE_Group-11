@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
 import { hashPassword } from "@/lib/utils"
+import { Checkbox } from '@/components/ui/checkbox'
 
 function Login() {
     const [username, setUsername] = useState("")
@@ -69,7 +70,7 @@ function Login() {
                             />
                         </Field>
                                 <div className="flex items-center gap-2">
-                                    <input id="remember" type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                                    <Checkbox id="remember" checked={remember} onCheckedChange={(v) => setRemember(!!v)} />
                                     <label htmlFor="remember" className="text-sm">Remember me</label>
                                 </div>
                         <Button type="submit" className="mt-4 w-full bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700">

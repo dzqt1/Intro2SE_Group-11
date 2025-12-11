@@ -25,8 +25,10 @@ function isAllowed(roleName, pathname) {
 }
 
 export default function RequireAuth({ children }) {
-  const { user } = useAuth()
+  const { user, initialized } = useAuth()
   const location = useLocation()
+  // wait until auth initialization completes
+  if (!initialized) return <div className="p-8">Loading...</div>
   if (!user) {
     return <Navigate to="/" state={{ from: location }} replace />
   }

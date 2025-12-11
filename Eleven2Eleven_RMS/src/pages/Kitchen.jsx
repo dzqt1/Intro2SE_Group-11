@@ -27,7 +27,7 @@ export default function KitchenPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen w-full bg-slate-50">
       {/* Header */}
       <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10 border-b border-slate-200">
         <div className="flex items-center justify-between max-w-2xl mx-auto">

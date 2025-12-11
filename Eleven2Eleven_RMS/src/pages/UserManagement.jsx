@@ -1,70 +1,158 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import UserLayout from "@/components/custom/User";
 import { Button } from "@/components/ui/button";
 import { InputGroup, InputGroupInput, InputGroupAddon } from "@/components/ui/input-group";
 import { Input } from "@/components/ui/input";
 import RoleCombobox from "@/components/custom/RoleCombobox";
 import { Search } from "lucide-react";
+import { getUsers, addUser, updateUser as apiUpdateUser, deleteUser as apiDeleteUser, getRoles } from "../data_access/api";
+import { hashPassword } from "@/lib/utils";
 
 export default function UserManagement() {
     const [query, setQuery] = useState("");
-    const [users, setUsers] = useState([
-        { id: 1, name: "John Doe", email: "john.doe@example.com", role: "Admin" },
-        { id: 2, name: "Jane Smith", email: "jane.smith@example.com", role: "Manager" },
-        { id: 3, name: "Bob Johnson", email: "bob.johnson@example.com", role: "Waiter" },
-        { id: 4, name: "Alice Williams", email: "alice.williams@example.com", role: "Kitchen Staff" }
-    ]);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     const [showAdd, setShowAdd] = useState(false);
     const [newName, setNewName] = useState("");
+    const [newUsername, setNewUsername] = useState("");
     const [newEmail, setNewEmail] = useState("");
     const [newRole, setNewRole] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+
+    useEffect(() => {
+        loadUsers();
+    }, []);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const list = await getRoles()
+                if (Array.isArray(list)) {
+                    const map = {}
+                    list.forEach(r => { map[String(r.id)] = r.name || String(r.id) })
+                    setRolesMap(map)
+                }
+            } catch (err) {
+                console.error('Failed to load roles', err)
+            }
+        })()
+    }, [])
+
+    const [rolesMap, setRolesMap] = useState({})
+
+    async function loadUsers() {
+        try {
+            setLoading(true);
+            const list = await getUsers();
+            const normalized = (list || []).map(u => ({
+                id: u.id,
+                username: u.name || "",
+                name: u.full_name || u.name || "",
+                email: u.email || "",
+                role: u.role || (u.role_name || (u.role_id ? String(u.role_id) : "User"))
+            }));
+            setUsers(normalized);
+        } catch (err) {
+            console.error("Failed to load users", err);
+            alert("Failed to load users from server.");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     const filteredUsers = useMemo(() => {
         const q = query.trim().toLowerCase();
-        if (!q) return users;
-        return users.filter(u => {
+        const filtered = users.filter(u => {
+            if (!q) return true
             return (
-                u.name.toLowerCase().includes(q) ||
-                u.email.toLowerCase().includes(q) ||
-                (u.role || "").toLowerCase().includes(q)
+                (u.name || "").toLowerCase().includes(q) ||
+                (u.email || "").toLowerCase().includes(q) ||
+                ((rolesMap[String(u.role)] || u.role || "").toLowerCase().includes(q))
             );
         });
-    }, [query, users]);
+        // sort by role name (mapped), then by full name
+        const sorted = filtered.slice().sort((a, b) => {
+            const ra = (rolesMap[String(a.role)] || a.role || "").toLowerCase();
+            const rb = (rolesMap[String(b.role)] || b.role || "").toLowerCase();
+            if (ra < rb) return -1;
+            if (ra > rb) return 1;
+            return (a.name || "").localeCompare(b.name || "");
+        });
+        return sorted;
+    }, [query, users, rolesMap]);
 
-    function handleSaveNew() {
-        const name = newName.trim();
+    async function handleSaveNew() {
+        const fullName = newName.trim();
+        const username = newUsername.trim();
         const email = newEmail.trim();
-        const role = newRole.trim() || "User";
-        if (!name || !email) {
-            // basic validation: require name and email
-            alert("Please enter both name and email.");
+        const role = newRole.trim() || "";
+        if (!username || !fullName || !email) {
+            alert("Please enter username, full name and email.");
             return;
         }
-        const id = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
-        const user = { id, name, email, role };
-        setUsers(prev => [user, ...prev]);
-        // reset form
-        setNewName("");
-        setNewEmail("");
-        setNewRole("");
-        setShowAdd(false);
+        try {
+            const hashed = newPassword ? await hashPassword(newPassword) : undefined;
+            const payload = { name: username, full_name: fullName, email };
+            if (role) payload.role = role;
+            if (hashed) payload.hashed_password = hashed;
+            const created = await addUser(payload);
+            const usr = {
+                id: created.id,
+                username: created.name || username,
+                name: created.full_name || created.name || fullName,
+                email: created.email || email,
+                role: created.role || role
+            };
+            setUsers(prev => [usr, ...prev]);
+            setNewName("");
+            setNewUsername("");
+            setNewEmail("");
+            setNewRole("");
+            setNewPassword("");
+            setShowAdd(false);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to create user.");
+        }
     }
 
     function handleCancelNew() {
         setNewName("");
+        setNewUsername("");
         setNewEmail("");
         setNewRole("");
         setShowAdd(false);
     }
 
-    function handleUpdateUser(id, updated) {
-        setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updated } : u)));
+    async function handleUpdateUser(id, updated) {
+        try {
+            await apiUpdateUser(id, updated);
+            setUsers(prev => prev.map(u => {
+                if (u.id !== id) return u;
+                return {
+                    ...u,
+                    username: updated.name ?? u.username,
+                    name: updated.full_name ?? (updated.name ?? u.name),
+                    email: updated.email ?? u.email,
+                    role: updated.role ?? u.role
+                };
+            }));
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update user.");
+        }
     }
 
-    function handleDeleteUser(id) {
+    async function handleDeleteUser(id) {
         if (!confirm("Delete this user?")) return;
-        setUsers(prev => prev.filter(u => u.id !== id));
+        try {
+            await apiDeleteUser(id);
+            setUsers(prev => prev.filter(u => u.id !== id));
+        } catch (err) {
+            console.error(err);
+            alert("Failed to delete user.");
+        }
     }
 
     return (
@@ -93,7 +181,13 @@ export default function UserManagement() {
 
             {showAdd && (
                 <div className="mb-6 rounded-md border bg-white p-4 shadow-sm">
-                    <div className="grid grid-rows-3 gap-3 ">
+                    <div className="grid grid-rows-4 gap-3 ">
+                        <Input
+                            className="col-span-1"
+                            placeholder="Username"
+                            value={newUsername}
+                            onChange={(e) => setNewUsername(e.target.value)}
+                        />
                         <Input
                             className="col-span-1"
                             placeholder="Full name"
@@ -106,6 +200,13 @@ export default function UserManagement() {
                             value={newEmail}
                             onChange={(e) => setNewEmail(e.target.value)}
                         />
+                        <Input
+                            className="col-span-1"
+                            placeholder="Password"
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                        />
                         <div className="col-span-1">
                             <RoleCombobox className="w-full" value={newRole} onChange={(v) => setNewRole(v)} />
                         </div>
@@ -117,7 +218,9 @@ export default function UserManagement() {
                 </div>
             )}
 
-            {filteredUsers.length === 0 ? (
+            {loading ? (
+                <div className="text-sm text-gray-500">Loading users...</div>
+            ) : filteredUsers.length === 0 ? (
                 <div className="text-sm text-gray-500">No users found.</div>
             ) : (
                 filteredUsers.map(user => (

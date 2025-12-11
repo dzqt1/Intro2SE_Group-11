@@ -1,3 +1,5 @@
+// Lưu trữ dữ liệu mã bàn và danh sách món tương ứng
+// Khi thanh toán xóa hết dữ liệu về mã bàn đó trong mảng và xuất ra file hóa đơn
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OrderContext = createContext();

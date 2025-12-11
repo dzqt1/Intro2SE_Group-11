@@ -8,7 +8,9 @@ import {
     Users,
     NotebookPen,
     CalendarPlus, // Icon cho đặt bàn mới
-    ListChecks    // Icon cho xem danh sách
+    ListChecks,    // Icon cho xem danh sách
+    Coffee,
+    Package,
 } from "lucide-react";
 
 export default function Side_Navbar() {
@@ -22,6 +24,8 @@ export default function Side_Navbar() {
         { name: "Order Statement", icon: <NotebookPen className={iconStyle} />, path: "/kitchen"},
         { name: "Table Reservation", icon: <CalendarPlus className={iconStyle} />, path: "/reservation" },
         { name: "Table Info", icon: <ListChecks className={iconStyle} />, path: "/table-info" },
+        { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},
+        { name: "Ingredient Management", icon: <Package className={iconStyle} />, path: "/ingredients"},
     ]
     
     const active_user = {name: "Hai Le", role: "Manager"};

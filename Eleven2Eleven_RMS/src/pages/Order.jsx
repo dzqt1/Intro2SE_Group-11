@@ -102,7 +102,7 @@ export default function OrderPage() {
       <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10 border-b border-slate-200">
         <div className="flex items-center justify-between max-w-2xl mx-auto">
           <h1 className="text-blue-600 text-lg">Order Management</h1>
-          <Link to="/tables">
+          <Link to="/kitchen">
             <Button variant="outline" size="sm" className="h-8 text-xs">
               Xem Bếp
             </Button>

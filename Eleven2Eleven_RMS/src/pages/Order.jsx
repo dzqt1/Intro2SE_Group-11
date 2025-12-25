@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { Input } from '../components/ui/input';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { Plus, Minus, X } from 'lucide-react';
 import { useOrders } from '../contexts/OrderContext';
 import { Link } from 'react-router-dom';
+
+// 1. Import thêm getTables
+import { getProducts, getTables } from '../data_access/api';
 
 export default function OrderPage() {
   const [tableNumber, setTableNumber] = useState('');
@@ -11,7 +13,38 @@ export default function OrderPage() {
   const [orderItems, setOrderItems] = useState([
     { id: '1', dishName: '', quantity: 1 }
   ]);
+
+  // State cho sản phẩm
+  const [products, setProducts] = useState([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // 2. Thêm state cho danh sách Bàn
+  const [tables, setTables] = useState([]);
+  const [loadingTables, setLoadingTables] = useState(true);
+
   const { saveOrder, getOrderByTable } = useOrders();
+
+  // 3. Lấy dữ liệu (gộp cả products và tables vào một useEffect cho gọn)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Chạy song song cả 2 request để tiết kiệm thời gian
+        const [productsData, tablesData] = await Promise.all([
+          getProducts(),
+          getTables()
+        ]);
+
+        setProducts(productsData || []);
+        setTables(tablesData || []);
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu:", error);
+      } finally {
+        setLoadingProducts(false);
+        setLoadingTables(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const addOrderItem = () => {
     const newItem = {
@@ -46,20 +79,19 @@ export default function OrderPage() {
 
   const handleConfirmOrder = () => {
     if (!tableNumber.trim()) {
-      alert('Vui lòng nhập số bàn!');
+      alert('Vui lòng chọn số bàn!');
       return;
     }
     const validItems = orderItems.filter(item => item.dishName.trim());
     if (validItems.length > 0) {
       const result = saveOrder(tableNumber, validItems);
-      
+
       if (result === 'updated') {
-        alert(`Đã cập nhật đơn hàng cho Bàn ${tableNumber}!`);
+        alert(`Đã cập nhật đơn hàng cho ${tableNumber}!`);
       } else {
-        alert(`Đã lưu đơn hàng mới cho Bàn ${tableNumber}!`);
+        alert(`Đã lưu đơn hàng mới cho ${tableNumber}!`);
       }
-      
-      // Reset form
+
       handleReset();
     } else {
       alert('Vui lòng thêm ít nhất một món!');
@@ -74,25 +106,22 @@ export default function OrderPage() {
 
   const handleTableConfirm = () => {
     if (!tableNumber.trim()) {
-      alert('Vui lòng nhập số bàn!');
+      alert('Vui lòng chọn số bàn!');
       return;
     }
-    
-    // Tìm đơn hàng đã lưu cho bàn này
+
     const existingOrder = getOrderByTable(tableNumber);
-    
+
     if (existingOrder) {
-      // Nếu tìm thấy, load danh sách món đã lưu
       setOrderItems(existingOrder.items.map(item => ({
         ...item,
-        id: Date.now().toString() + Math.random() // Tạo ID mới cho mỗi item
+        id: Date.now().toString() + Math.random()
       })));
-      alert(`Đã tải đơn hàng có sẵn cho Bàn ${tableNumber}`);
+      alert(`Đã tải đơn hàng có sẵn cho ${tableNumber}`);
     } else {
-      // Nếu không tìm thấy, giữ danh sách món trống
       setOrderItems([{ id: Date.now().toString(), dishName: '', quantity: 1 }]);
     }
-    
+
     setIsTableConfirmed(true);
   };
 
@@ -115,16 +144,26 @@ export default function OrderPage() {
         {/* Table Number Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 mb-4">
           <label className="text-slate-700 text-sm block mb-2">
-            Số Bàn
+            Chọn Bàn
           </label>
-          <Input
-            type="text"
-            placeholder="e.g., 'Bàn 12'"
+          
+          {/* 4. Thay thế Input bằng Select cho số bàn */}
+          <select
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
-            className="h-10 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-            disabled={isTableConfirmed}
-          />
+            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isTableConfirmed || loadingTables}
+          >
+            <option value="" disabled>
+              {loadingTables ? "Đang tải danh sách bàn..." : "Chọn số bàn"}
+            </option>
+            {tables.map((table) => (
+              <option key={table.id} value={table.name || `Bàn ${table.id}`}>
+                {table.name || `Bàn ${table.id}`}
+              </option>
+            ))}
+          </select>
+
           {!isTableConfirmed ? (
             <Button
               onClick={handleTableConfirm}
@@ -134,7 +173,7 @@ export default function OrderPage() {
             </Button>
           ) : (
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-blue-600 text-sm">✓ Đã xác nhận bàn: {tableNumber}</span>
+              <span className="text-blue-600 text-sm">✓ Đã xác nhận: {tableNumber}</span>
               <Button
                 onClick={() => setIsTableConfirmed(false)}
                 variant="ghost"
@@ -168,13 +207,23 @@ export default function OrderPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      <Input
-                        type="text"
-                        placeholder="Tên món ăn"
+                      {/* Select cho món ăn (giữ nguyên từ bước trước) */}
+                      <select
                         value={item.dishName}
                         onChange={(e) => updateDishName(item.id, e.target.value)}
-                        className="h-9 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-sm"
-                      />
+                        className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={loadingProducts}
+                      >
+                        <option value="" disabled>
+                          {loadingProducts ? "Đang tải menu..." : "Chọn món ăn"}
+                        </option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.name}>
+                            {product.name}
+                            {product.price ? ` - ${product.price.toLocaleString()}đ` : ''}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {orderItems.length > 1 && (
                       <Button
@@ -199,11 +248,11 @@ export default function OrderPage() {
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      
+
                       <div className="flex-1 text-center bg-slate-50 rounded-lg py-1.5 px-3 border border-slate-200 min-w-0">
                         <span className="text-slate-800 text-sm">{item.quantity}</span>
                       </div>
-                      
+
                       <Button
                         onClick={() => updateQuantity(item.id, 1)}
                         variant="outline"
@@ -226,7 +275,7 @@ export default function OrderPage() {
               >
                 Xác Nhận Đơn Hàng
               </Button>
-              
+
               <Button
                 onClick={handleReset}
                 variant="outline"

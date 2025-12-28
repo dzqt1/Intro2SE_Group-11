@@ -1,13 +1,98 @@
-import React from "react";
-import { useTableContext } from "@/contexts/TableContext";
+import React, { useState, useEffect } from "react";
 import { 
   Card, CardHeader, CardTitle, CardContent, CardFooter 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, Calendar, Users, Trash2, User, Phone } from "lucide-react";
+import { Clock, Calendar, Users, Trash2, User, Phone, Loader2 } from "lucide-react";
 
 export default function TableInfo() {
-  const { reservations, removeReservation } = useTableContext();
+  const [reservations, setReservations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // --- 1. THÊM HÀM NÀY VÀO ĐỂ KHẮC PHỤC LỖI ---
+  const formatDisplayTime = (timeStr) => {
+    // Nếu chuỗi rỗng hoặc đã có AM/PM thì trả về luôn
+    if (!timeStr || timeStr.includes("AM") || timeStr.includes("PM")) return timeStr;
+    
+    // Nếu là dạng 24h (14:30), convert nó
+    const [hours, minutes] = timeStr.split(':');
+    if (!hours || !minutes) return timeStr; 
+
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12; 
+    return `${String(h).padStart(2, '0')}:${minutes} ${ampm}`;
+  };
+  // ---------------------------------------------
+
+  const fetchReservations = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("https://eleven2eleven-rms-db-default-rtdb.asia-southeast1.firebasedatabase.app/Reservation.json");
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch data");
+        }
+
+        const data = await response.json();
+
+        const loadedReservations = [];
+        for (const key in data) {
+          // Lọc dữ liệu rác
+          if (key === "res_sample") continue;
+          if (!data[key].customer_name || data[key].customer_name.trim() === "") continue;
+
+          if (data[key]) {
+            loadedReservations.push({
+              id: key, 
+              customerName: data[key].customer_name || "Unknown",
+              phoneNumber: data[key].phone || "N/A",
+              tableNumber: data[key].table_name || "Unknown Table",
+              
+              // 2. Giờ đây hàm này đã tồn tại, code sẽ chạy mượt mà
+              time: formatDisplayTime(data[key].time || "--:--"), 
+              
+              date: data[key].date || new Date().toISOString().split('T')[0],
+              guestCount: data[key].guests || data[key].guest_count || "?",
+              status: data[key].status || "Confirmed"
+            });
+          }
+        }
+        
+        setReservations(loadedReservations.reverse());
+      } catch (err) {
+        console.error("Error fetching reservations:", err);
+      }
+      setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchReservations();
+  }, []);
+
+  const handleRemoveReservation = async (id) => {
+    if (!window.confirm("Are you sure you want to cancel this reservation?")) return;
+
+    try {
+      await fetch(`https://eleven2eleven-rms-db-default-rtdb.asia-southeast1.firebasedatabase.app/Reservation/${id}.json`, {
+        method: 'DELETE',
+      });
+      setReservations((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Failed to delete reservation:", error);
+      alert("Error deleting reservation. Please try again.");
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center w-full min-h-screen bg-gray-50">
+        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+        <p className="mt-2 text-gray-500">Loading reservations...</p>
+      </div>
+    );
+  }
 
   if (reservations.length === 0) {
     return (
@@ -20,9 +105,14 @@ export default function TableInfo() {
 
   return (
     <div className="p-8 w-full bg-gray-50 min-h-screen">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 uppercase tracking-wide">
-        Reservation List ({reservations.length})
-      </h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800 uppercase tracking-wide">
+          Reservation List ({reservations.length})
+        </h1>
+        <Button variant="outline" onClick={fetchReservations} size="sm">
+            Refresh Data
+        </Button>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {reservations.map((item) => (
@@ -42,7 +132,6 @@ export default function TableInfo() {
             </CardHeader>
             
             <CardContent className="py-4 space-y-3 flex-1 bg-white">
-              {/* Customer Info Section */}
               <div className="bg-gray-50 p-3 rounded-md space-y-2 mb-2">
                 <div className="flex items-center text-gray-800 font-semibold">
                   <User className="w-4 h-4 mr-2 text-blue-500" />
@@ -54,7 +143,6 @@ export default function TableInfo() {
                 </div>
               </div>
 
-              {/* Reservation Details */}
               <div className="space-y-2 pl-1">
                 <div className="flex items-center text-gray-700 text-sm">
                   <Users className="w-4 h-4 mr-3 text-gray-400" />
@@ -76,7 +164,7 @@ export default function TableInfo() {
                 variant="destructive" 
                 size="sm" 
                 className="gap-2 shadow-sm"
-                onClick={() => removeReservation(item.id)}
+                onClick={() => handleRemoveReservation(item.id)}
               >
                 <Trash2 className="w-4 h-4" /> Cancel
               </Button>

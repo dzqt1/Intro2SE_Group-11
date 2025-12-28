@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useTableContext } from "@/contexts/TableContext";
+
+// Đã xóa import TableContext ở đây
 
 import { 
   Card, CardHeader, CardTitle, CardContent, CardFooter 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Field, FieldLabel, FieldContent, FieldSet } from "@/components/ui/field";
 
 export default function TableReservation() {
   const navigate = useNavigate();
-  const { addReservation } = useTableContext();
+  // Đã xóa const { addReservation } ...
 
   const [formData, setFormData] = useState({
     customerName: "",
@@ -25,7 +27,11 @@ export default function TableReservation() {
 
   const [error, setError] = useState("");
   const [minDate, setMinDate] = useState("");
+  const [availableTables, setAvailableTables] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 1. Lấy ngày hiện tại
   useEffect(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -34,20 +40,60 @@ export default function TableReservation() {
     setMinDate(`${yyyy}-${mm}-${dd}`);
   }, []);
 
+  // 2. GỌI API FIREBASE LẤY DANH SÁCH BÀN
+  useEffect(() => {
+    const fetchTablesFromFirebase = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("https://eleven2eleven-rms-db-default-rtdb.asia-southeast1.firebasedatabase.app/Table.json");
+        if (!response.ok) throw new Error('Could not fetch tables.');
+        
+        const data = await response.json();
+        const loadedTables = Object.values(data).filter(Boolean);
+        const freeTables = loadedTables.filter(table => table.status === "Available");
+        setAvailableTables(freeTables);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+      setIsLoading(false);
+    };
+    fetchTablesFromFirebase();
+  }, []); 
+
+  // 3. XỬ LÝ KHI NHẬP LIỆU
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "tableNumber") {
+        const selectedTable = availableTables.find(t => t.name === value);
+        if (selectedTable) {
+            setFormData(prev => ({ ...prev, [name]: value, guestCount: selectedTable.seats }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
     if (error) setError("");
   };
 
-  const handleSubmit = () => {
-    // 1. Validation
+  // --- HÀM FORMAT GIỜ AM/PM ---
+  const formatTimeAMPM = (time24) => {
+    if (!time24) return "";
+    const [hours, minutes] = time24.split(':');
+    let h = parseInt(hours, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12; 
+    return `${String(h).padStart(2, '0')}:${minutes} ${ampm}`;
+  };
+
+  // 4. SUBMIT FORM
+  const handleSubmit = async () => {
     if (!formData.customerName || !formData.phoneNumber || !formData.tableNumber || !formData.guestCount || !formData.date || !formData.time) {
       setError("Please fill in all fields!");
       return; 
     }
 
-    // 2. Date Validation
     const inputDate = new Date(formData.date);
     const now = new Date();
     const [hours, minutes] = formData.time.split(':');
@@ -58,9 +104,42 @@ export default function TableReservation() {
       return;
     }
 
-    // 3. Save & Redirect
-    addReservation(formData);
-    navigate("/table-info");
+    setIsSubmitting(true);
+    try {
+        const selectedTableObj = availableTables.find(t => t.name === formData.tableNumber);
+        const tableId = selectedTableObj ? selectedTableObj.id : "";
+        const formattedTime = formatTimeAMPM(formData.time);
+
+        const newReservationData = {
+            customer_name: formData.customerName,
+            phone: formData.phoneNumber,
+            table_name: formData.tableNumber,
+            table_id: tableId,
+            guest_count: formData.guestCount,
+            date: formData.date,
+            time: formattedTime,
+            status: "Confirmed",
+            created_at: new Date().toISOString()
+        };
+
+        const response = await fetch("https://eleven2eleven-rms-db-default-rtdb.asia-southeast1.firebasedatabase.app/Reservation.json", {
+            method: 'POST',
+            body: JSON.stringify(newReservationData),
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) throw new Error("Failed to save reservation.");
+
+        // Đã xóa dòng addReservation(formData) ở đây
+        // Chỉ cần chuyển trang, trang TableInfo sẽ tự fetch lại dữ liệu mới từ Firebase
+        navigate("/table-info");
+
+    } catch (err) {
+        console.error("Error saving reservation:", err);
+        setError("Failed to create reservation. Please try again.");
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const handleCancel = () => {
@@ -75,82 +154,59 @@ export default function TableReservation() {
           <CardTitle className="text-4xl font-serif text-gray-800 tracking-wide uppercase">
             Create Reservation
           </CardTitle>
-          <p className="text-sm text-gray-500 mt-2">Staff Entry Form</p>
+          <p className="text-sm text-gray-500 mt-2">Connected to Firebase Database</p>
         </CardHeader>
 
         <CardContent className="px-8 py-6">
           <FieldSet>
-            {/* Row 1: Customer Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-2">
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Customer Name</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="customerName" placeholder="Ex: John Doe" 
-                    className="h-12 text-lg bg-gray-100/50"
-                    value={formData.customerName} onChange={handleChange}
-                  />
+                  <Input name="customerName" placeholder="Ex: John Doe" className="h-12 text-lg bg-gray-100/50" value={formData.customerName} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
-
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Phone Number</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="phoneNumber" placeholder="Ex: 0912..." 
-                    className="h-12 text-lg bg-gray-100/50"
-                    value={formData.phoneNumber} onChange={handleChange}
-                  />
+                  <Input name="phoneNumber" placeholder="Ex: 0912..." className="h-12 text-lg bg-gray-100/50" value={formData.phoneNumber} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
             </div>
-
-            {/* Row 2: Table Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Table Number</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="tableNumber" placeholder="Ex: Table 05" 
-                    className="h-12 text-lg bg-gray-100/50"
-                    value={formData.tableNumber} onChange={handleChange}
-                  />
+                  <Select name="tableNumber" value={formData.tableNumber} onChange={handleChange} className="h-12 text-lg bg-gray-100/50 border-gray-300 focus-visible:ring-gray-400" disabled={isLoading || isSubmitting}>
+                    <option value="" disabled>{isLoading ? "Loading tables..." : "Select a table..."}</option>
+                    {availableTables.length > 0 ? (
+                        availableTables.map((table) => (
+                            <option key={table.id} value={table.name}>{table.name} (ID: {table.id}) - {table.area}</option>
+                        ))
+                    ) : (
+                        <option value="" disabled>No available tables</option>
+                    )}
+                  </Select>
                 </FieldContent>
               </Field>
-
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Number of Guests</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="guestCount" type="number" min="1" placeholder="Ex: 4" 
-                    className="h-12 text-lg bg-gray-100/50"
-                    value={formData.guestCount} onChange={handleChange}
-                  />
+                  <Input name="guestCount" type="number" min="1" placeholder="Auto-filled from table" className="h-12 text-lg bg-gray-100/50" value={formData.guestCount} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
             </div>
-
-            {/* Row 3: Time */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Date</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="date" type="date" min={minDate}
-                    className="h-12 text-lg bg-gray-100/50 block w-full"
-                    value={formData.date} onChange={handleChange}
-                  />
+                  <Input name="date" type="date" min={minDate} className="h-12 text-lg bg-gray-100/50 block w-full" value={formData.date} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
-
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Time</FieldLabel>
                 <FieldContent>
-                  <Input 
-                    name="time" type="time" 
-                    className="h-12 text-lg bg-gray-100/50 block w-full"
-                    value={formData.time} onChange={handleChange}
-                  />
+                  <Input name="time" type="time" className="h-12 text-lg bg-gray-100/50 block w-full" value={formData.time} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
             </div>
@@ -164,15 +220,10 @@ export default function TableReservation() {
               <span className="font-medium text-sm">{error}</span>
             </div>
           )}
-          <Button 
-            className="w-40 h-12 text-lg uppercase tracking-wider font-semibold bg-[#6d4c41] hover:bg-[#5d4037] text-white transition-all mt-2"
-            onClick={handleSubmit}
-          >
-            Confirm
+          <Button className="w-40 h-12 text-lg uppercase tracking-wider font-semibold bg-[#6d4c41] hover:bg-[#5d4037] text-white transition-all mt-2 flex gap-2 items-center justify-center" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />} Confirm
           </Button>
-          <Button variant="link" className="text-gray-500 hover:text-black" onClick={handleCancel}>
-            Cancel
-          </Button>
+          <Button variant="link" className="text-gray-500 hover:text-black" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
         </CardFooter>
       </Card>
     </div>

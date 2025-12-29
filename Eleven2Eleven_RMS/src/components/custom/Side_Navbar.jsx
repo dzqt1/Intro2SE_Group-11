@@ -79,17 +79,24 @@ export default function Side_Navbar() {
                     </ul>
                 </nav>
             </div>
-            {/* Phần Footer User giữ nguyên */}
-                <div className="px-6 pb-6">
-                <div className="mt-4 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full border-2 border-gray-400" />
-                    <div className="flex-1">
-                        <div className="text-lg font-medium text-gray-800">{auth.user ? `${auth.user.roleName || auth.user.role}: ${auth.user.full_name || auth.user.username}` : 'Not signed in'}</div>
+            {/* Phần Footer User */}
+            <div className="px-4 pb-4 border-t border-gray-300 mt-4">
+                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-lg">{auth.user?.full_name?.[0]?.toUpperCase() || auth.user?.username?.[0]?.toUpperCase() || 'U'}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-600 uppercase tracking-wider font-semibold">{auth.user?.roleName || auth.user?.role || 'User'}</p>
+                        <p className="text-sm font-bold text-gray-900 truncate">{auth.user?.full_name || auth.user?.username || 'Not signed in'}</p>
                     </div>
                     {auth.user && (
-                        <div className="flex gap-2">
-                            <Button variant="ghost" onClick={() => { auth.logout(); navigate('/'); }}>Logout</Button>
-                        </div>
+                        <button 
+                            onClick={() => { auth.logout(); navigate('/'); }}
+                            className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline whitespace-nowrap"
+
+                        >
+                            Logout
+                        </button>
                     )}
                 </div>
             </div>

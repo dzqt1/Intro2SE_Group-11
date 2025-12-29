@@ -4,8 +4,7 @@ import { Plus, Minus, X } from 'lucide-react';
 import { useOrders } from '../contexts/OrderContext';
 import { Link } from 'react-router-dom';
 
-// 1. Import thêm getTables
-import { getProducts, getTables } from '../data_access/api';
+import { getProducts, getTables, getReservations, updateTable, deleteReservation } from '../data_access/api';
 
 export default function OrderPage() {
   const [tableNumber, setTableNumber] = useState('');
@@ -14,28 +13,28 @@ export default function OrderPage() {
     { id: '1', dishName: '', quantity: 1 }
   ]);
 
-  // State cho sản phẩm
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // 2. Thêm state cho danh sách Bàn
   const [tables, setTables] = useState([]);
+  const [reservations, setReservations] = useState([]); // State lưu lịch đặt
   const [loadingTables, setLoadingTables] = useState(true);
 
   const { saveOrder, getOrderByTable } = useOrders();
 
-  // 3. Lấy dữ liệu (gộp cả products và tables vào một useEffect cho gọn)
+  // 2. Lấy dữ liệu (Products, Tables, Reservations)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Chạy song song cả 2 request để tiết kiệm thời gian
-        const [productsData, tablesData] = await Promise.all([
+        const [productsData, tablesData, reservationsData] = await Promise.all([
           getProducts(),
-          getTables()
+          getTables(),
+          getReservations()
         ]);
 
         setProducts(productsData || []);
         setTables(tablesData || []);
+        setReservations(reservationsData || []);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu:", error);
       } finally {
@@ -77,14 +76,154 @@ export default function OrderPage() {
     }));
   };
 
-  const handleConfirmOrder = () => {
+  // --- HÀM TIỆN ÍCH XỬ LÝ THỜI GIAN ---
+  // Input: dateStr ("2025-12-29"), timeStr ("03:00 PM")
+  const parseDateTime = (dateStr, timeStr) => {
+    try {
+      if (!dateStr || !timeStr) return null;
+
+      // 1. Xử lý ngày: "2025-12-29" -> [2025, 12, 29]
+      const [year, month, day] = dateStr.split('-').map(Number);
+
+      // 2. Xử lý giờ: "03:00 PM"
+      const [timePart, modifier] = timeStr.split(' '); // Tách "03:00" và "PM"
+      let [hours, minutes] = timePart.split(':').map(Number);
+
+      // 3. Chuyển đổi sang định dạng 24h
+      if (modifier === 'PM' && hours < 12) {
+        hours += 12;
+      }
+      if (modifier === 'AM' && hours === 12) {
+        hours = 0;
+      }
+
+      // 4. Tạo đối tượng Date (Lưu ý: tháng trong JS bắt đầu từ 0)
+      return new Date(year, month - 1, day, hours, minutes, 0);
+    } catch (e) {
+      console.error("Lỗi parse thời gian:", e);
+      return null;
+    }
+  };
+
+  const checkReservationConflict = (selectedTableId) => {
+    const now = new Date();
+    // Tạo mốc thời gian 4 tiếng sau
+    const fourHoursLater = new Date(now.getTime() + 4 * 60 * 60 * 1000);
+    const oneHourBefore = new Date(now.getTime() - 1 * 60 * 60 * 1000);
+    // Tìm các đơn đặt của bàn này
+    const tableReservations = reservations.filter(res => 
+      String(res.table_id) === String(selectedTableId)
+    );
+
+    // Tìm đơn đặt nào nằm trong khoảng (Now -> Now + 4h)
+    const conflict = tableReservations.find(res => {
+      // Truyền cả res.date và res.time vào hàm mới
+      const resTime = parseDateTime(res.date, res.time); 
+      return resTime && (resTime >= now && resTime <= fourHoursLater) || (resTime >= oneHourBefore && resTime <= now);
+    }); 
+
+    return conflict;
+  };
+
+// --- XỬ LÝ XÁC NHẬN BÀN (Đã cập nhật logic xóa lịch đặt) ---
+  // Lưu ý: Thêm từ khóa 'async' vào trước hàm
+  const handleTableConfirm = async () => {
+    if (!tableNumber.trim()) {
+      alert('Vui lòng chọn số bàn!');
+      return;
+    }
+
+    const currentTable = tables.find(t => (t.name || `Bàn ${t.id}`) === tableNumber);
+
+    if (!currentTable) {
+      alert("Không tìm thấy thông tin bàn!");
+      return;
+    }
+
+    if (currentTable.status !== 'Available') {
+      alert("Bàn đang được sử dụng.");
+      return;
+    }
+
+    // Kiểm tra lịch đặt
+    const conflictReservation = checkReservationConflict(currentTable.id);
+    
+    if (conflictReservation) {
+      const inputPhone = window.prompt(
+        `Bàn này có lịch đặt lúc ${conflictReservation.time} ngày ${conflictReservation.date}.\n` +
+        `Vui lòng nhập SỐ ĐIỆN THOẠI khách đặt để xác nhận:`
+      );
+
+      if (inputPhone === null) return; 
+
+      if (inputPhone.trim() !== conflictReservation.phone) {
+        alert("Sai số điện thoại! Bạn không có quyền mở bàn này.");
+        return; 
+      }
+
+      // --- LOGIC MỚI: XÓA LỊCH ĐẶT SAU KHI XÁC THỰC THÀNH CÔNG ---
+      try {
+        // 1. Gọi API xóa trong Database
+        // Giả sử conflictReservation có trường 'id' là khóa chính
+        await deleteReservation(conflictReservation.id);
+
+        // 2. Cập nhật State local để giao diện phản hồi ngay (không cần reload trang)
+        // Loại bỏ lịch đặt vừa xóa ra khỏi danh sách reservations đang lưu ở máy
+        setReservations(prevReservations => 
+          prevReservations.filter(res => res.id !== conflictReservation.id)
+        );
+
+        alert("Xác thực thành công! Lịch đặt đã được xóa khỏi hệ thống.");
+      } catch (error) {
+        console.error("Lỗi khi xóa lịch đặt:", error);
+        alert("Lỗi hệ thống: Không thể xóa lịch đặt. Vui lòng thử lại!");
+        return; // Nếu lỗi server thì dừng lại, không cho mở bàn để tránh lỗi dữ liệu
+      }
+      // -----------------------------------------------------------
+    }
+
+    // Logic tải đơn hàng cũ (giữ nguyên)
+    const existingOrder = getOrderByTable(tableNumber);
+    if (existingOrder) {
+      setOrderItems(existingOrder.items.map(item => ({
+        ...item,
+        id: Date.now().toString() + Math.random()
+      })));
+      alert(`Đã tải đơn hàng có sẵn cho ${tableNumber}`);
+    } else {
+      setOrderItems([{ id: Date.now().toString(), dishName: '', quantity: 1 }]);
+    }
+
+    setIsTableConfirmed(true);
+  };
+  
+  // --- XỬ LÝ XÁC NHẬN ĐƠN HÀNG ---
+  const handleConfirmOrder = async () => {
     if (!tableNumber.trim()) {
       alert('Vui lòng chọn số bàn!');
       return;
     }
     const validItems = orderItems.filter(item => item.dishName.trim());
+    
     if (validItems.length > 0) {
+      // 1. Lưu đơn hàng (Local Context)
       const result = saveOrder(tableNumber, validItems);
+
+      // 2. Cập nhật trạng thái bàn trên Server thành "Occupied" (In use)
+      const currentTable = tables.find(t => (t.name || `Bàn ${t.id}`) === tableNumber);
+      if (currentTable) {
+        try {
+          // Gọi API cập nhật
+          await updateTable(currentTable.id, { status: 'Occupied' });
+          
+          // Cập nhật State local để giao diện phản hồi ngay lập tức (Optional nhưng recommended)
+          setTables(prevTables => prevTables.map(t => 
+            t.id === currentTable.id ? { ...t, status: 'Occupied' } : t
+          ));
+        } catch (error) {
+          console.error("Lỗi khi cập nhật trạng thái bàn:", error);
+        }
+      }
 
       if (result === 'updated') {
         alert(`Đã cập nhật đơn hàng cho ${tableNumber}!`);
@@ -104,38 +243,19 @@ export default function OrderPage() {
     setOrderItems([{ id: Date.now().toString(), dishName: '', quantity: 1 }]);
   };
 
-  const handleTableConfirm = () => {
-    if (!tableNumber.trim()) {
-      alert('Vui lòng chọn số bàn!');
-      return;
-    }
-
-    const existingOrder = getOrderByTable(tableNumber);
-
-    if (existingOrder) {
-      setOrderItems(existingOrder.items.map(item => ({
-        ...item,
-        id: Date.now().toString() + Math.random()
-      })));
-      alert(`Đã tải đơn hàng có sẵn cho ${tableNumber}`);
-    } else {
-      setOrderItems([{ id: Date.now().toString(), dishName: '', quantity: 1 }]);
-    }
-
-    setIsTableConfirmed(true);
-  };
-
   return (
     <div className="min-h-screen w-full bg-slate-50">
       {/* Header */}
       <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10 border-b border-slate-200">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
-          <h1 className="text-blue-600 text-lg">Order Management</h1>
-          <Link to="/kitchen">
-            <Button variant="outline" size="sm" className="h-8 text-xs">
-              Xem Bếp
-            </Button>
-          </Link>
+        <div className="relative flex items-center justify-center max-w-2xl mx-auto">
+          <h1 className="text-blue-600 text-lg font-bold">Order Management</h1>
+          <div className="absolute right-0">
+            <Link to="/kitchen">
+              <Button variant="outline" size="sm" className="h-8 text-xs">
+                Xem Bếp
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -147,7 +267,6 @@ export default function OrderPage() {
             Chọn Bàn
           </label>
           
-          {/* 4. Thay thế Input bằng Select cho số bàn */}
           <select
             value={tableNumber}
             onChange={(e) => setTableNumber(e.target.value)}
@@ -158,8 +277,13 @@ export default function OrderPage() {
               {loadingTables ? "Đang tải danh sách bàn..." : "Chọn số bàn"}
             </option>
             {tables.map((table) => (
-              <option key={table.id} value={table.name || `Bàn ${table.id}`}>
-                {table.name || `Bàn ${table.id}`}
+              <option 
+                key={table.id} 
+                value={table.name || `Bàn ${table.id}`}
+                // Hiển thị thêm trạng thái trong dropdown để dễ nhìn
+                className={table.status !== 'Available' ? 'text-red-500' : 'text-green-600'}
+              >
+                {table.name || `Bàn ${table.id}`} ({table.status === 'Available' ? 'Trống' : 'Có khách'})
               </option>
             ))}
           </select>
@@ -186,7 +310,7 @@ export default function OrderPage() {
           )}
         </div>
 
-        {/* Order Items Section - Only show when table is confirmed */}
+        {/* Order Items Section */}
         {isTableConfirmed && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -207,7 +331,6 @@ export default function OrderPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div className="flex-1">
-                      {/* Select cho món ăn (giữ nguyên từ bước trước) */}
                       <select
                         value={item.dishName}
                         onChange={(e) => updateDishName(item.id, e.target.value)}
@@ -267,7 +390,6 @@ export default function OrderPage() {
               </div>
             ))}
 
-            {/* Action Buttons */}
             <div className="space-y-2 pt-2">
               <Button
                 onClick={handleConfirmOrder}

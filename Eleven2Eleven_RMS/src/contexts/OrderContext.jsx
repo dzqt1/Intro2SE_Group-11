@@ -1,5 +1,3 @@
-// Lưu trữ dữ liệu mã bàn và danh sách món tương ứng
-// Khi thanh toán xóa hết dữ liệu về mã bàn đó trong mảng và xuất ra file hóa đơn
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OrderContext = createContext();
@@ -22,7 +20,7 @@ export function OrderProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedOrders));
   }, [savedOrders]);
 
-  // 3. Chỉ lắng nghe sự kiện 'storage' (để đồng bộ khi mở 2 tab trình duyệt)
+  // 3. Đồng bộ hóa giữa các tab trình duyệt
   useEffect(() => {
     const handleStorageChange = (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
@@ -33,14 +31,14 @@ export function OrderProvider({ children }) {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // --- CÁC HÀM XỬ LÝ LOGIC (Giữ nguyên như cũ) ---
-  
+  // --- CÁC HÀM XỬ LÝ LOGIC ---
+
   const saveOrder = (tableNumber, items) => {
     const existingOrderIndex = savedOrders.findIndex(
       order => order.tableNumber === tableNumber
     );
     
-    // Đảm bảo item có trạng thái completed
+    // Đảm bảo item có trạng thái completed (mặc định false nếu mới)
     const itemsWithStatus = items.map(item => ({
       ...item,
       completed: item.completed || false
@@ -61,7 +59,7 @@ export function OrderProvider({ children }) {
       status = 'added';
     }
     
-    setSavedOrders(newOrders); // React sẽ tự động cập nhật UI ở OrderPage và KitchenPage
+    setSavedOrders(newOrders);
     return status;
   };
 
@@ -83,8 +81,68 @@ export function OrderProvider({ children }) {
     });
   };
 
+  // --- [MỚI] HÀM XÓA ĐƠN HÀNG (Dùng khi thanh toán xong) ---
+  const removeOrder = (tableNumber) => {
+    setSavedOrders(prevOrders => prevOrders.filter(order => order.tableNumber !== tableNumber));
+  };
+
+  // --- [MỚI] HÀM XUẤT HÓA ĐƠN RA FILE .TXT ---
+  const downloadInvoice = (invoiceData) => {
+    /* invoiceData cần có cấu trúc:
+       {
+         tableNumber: "Bàn 1",
+         items: [...],
+         totalAmount: 500000,
+         date: "12:30 28/12/2025"
+       }
+    */
+    
+    // 1. Tạo nội dung hóa đơn
+    let content = `================================\n`;
+    content += `       HÓA ĐƠN THANH TOÁN       \n`;
+    content += `================================\n\n`;
+    content += `Bàn: ${invoiceData.tableNumber}\n`;
+    content += `Thời gian: ${invoiceData.date || new Date().toLocaleString('vi-VN')}\n`;
+    content += `--------------------------------\n`;
+    content += `MÓN ĂN              SL    THÀNH TIỀN\n`;
+    content += `--------------------------------\n`;
+
+    invoiceData.items.forEach(item => {
+        // Giả sử item có truyền thêm price vào lúc gọi hàm này
+        const itemTotal = (item.price * item.quantity).toLocaleString('vi-VN');
+        // Format đơn giản
+        content += `${item.dishName.padEnd(20)} x${item.quantity.toString().padEnd(4)} ${itemTotal}đ\n`;
+    });
+
+    content += `--------------------------------\n`;
+    content += `TỔNG CỘNG:          ${invoiceData.totalAmount.toLocaleString('vi-VN')} VNĐ\n`;
+    content += `================================\n`;
+    content += `    Cảm ơn và hẹn gặp lại!      \n`;
+
+    // 2. Tạo Blob và tải xuống
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    // Tên file: HoaDon_Ban1_TIMESTAMP.txt
+    link.download = `HoaDon_${invoiceData.tableNumber.replace(/\s/g, '')}_${Date.now()}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Dọn dẹp
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <OrderContext.Provider value={{ savedOrders, saveOrder, getOrderByTable, markPendingItemsAsCompleted }}>
+    <OrderContext.Provider value={{ 
+        savedOrders, 
+        saveOrder, 
+        getOrderByTable, 
+        markPendingItemsAsCompleted,
+        removeOrder,      // <--- Đã thêm
+        downloadInvoice   // <--- Đã thêm
+    }}>
       {children}
     </OrderContext.Provider>
   );

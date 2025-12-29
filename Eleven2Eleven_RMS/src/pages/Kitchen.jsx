@@ -1,12 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOrders } from '../contexts/OrderContext';
 import { Button } from '../components/ui/button';
-import { ChefHat, CheckCircle2, Clock } from 'lucide-react';
+import { CheckCircle2, Clock, DollarSign, Receipt, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+// Import API để lấy giá tiền và cập nhật trạng thái bàn
+import { getProducts, getTables, updateTable } from '../data_access/api';
 
 export default function KitchenPage() {
-  const { savedOrders, markPendingItemsAsCompleted } = useOrders();
+  // Lấy thêm removeOrder và downloadInvoice từ Context vừa sửa
+  const { savedOrders, markPendingItemsAsCompleted, removeOrder, downloadInvoice } = useOrders();
+  
   const [selectedTable, setSelectedTable] = useState(null);
+
+  // State quản lý Hóa đơn
+  const [showInvoice, setShowInvoice] = useState(false);
+  const [invoiceData, setInvoiceData] = useState(null);
+
+  // Dữ liệu từ Server (để tra cứu giá và ID bàn)
+  const [products, setProducts] = useState([]);
+  const [tables, setTables] = useState([]);
+
+  // 1. Tải danh sách Sản phẩm (lấy giá) và Bàn (lấy ID)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [prods, tabs] = await Promise.all([getProducts(), getTables()]);
+        setProducts(prods || []);
+        setTables(tabs || []);
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // --- CÁC HÀM XỬ LÝ LOGIC ---
 
   const handleTableClick = (tableNumber) => {
     setSelectedTable(selectedTable === tableNumber ? null : tableNumber);
@@ -14,26 +42,96 @@ export default function KitchenPage() {
 
   const handleCompleteOrder = (tableNumber) => {
     markPendingItemsAsCompleted(tableNumber);
-    setSelectedTable(null);
   };
 
-  // Lọc các bàn có món chưa hoàn thành
-  const getPendingItems = (items) => {
-    return items.filter(item => !item.completed);
+  const getPendingItems = (items) => items.filter(item => !item.completed);
+  const allItemsCompleted = (items) => items.every(item => item.completed);
+
+  // Tìm giá tiền của món ăn
+  const getPrice = (dishName) => {
+    const product = products.find(p => p.name === dishName);
+    return product ? product.price : 0;
   };
 
-  const allItemsCompleted = (items) => {
-    return items.every(item => item.completed);
+  // Tính tổng tiền đơn hàng
+  const calculateTotal = (items) => {
+    return items.reduce((total, item) => {
+      return total + (getPrice(item.dishName) * item.quantity);
+    }, 0);
+  };
+
+  // Mở Modal Hóa đơn
+  const handleOpenInvoice = (order) => {
+    const total = calculateTotal(order.items);
+    setInvoiceData({
+      ...order,
+      totalAmount: total
+    });
+    setShowInvoice(true);
+  };
+
+  // --- XỬ LÝ THANH TOÁN (QUAN TRỌNG) ---
+  const handleConfirmPayment = async () => {
+    if (!invoiceData) return;
+
+    try {
+      // 1. Cập nhật trạng thái bàn trên Firebase -> Available
+      const currentTable = tables.find(t => 
+        (t.name || `Bàn ${t.id}`) === invoiceData.tableNumber
+      );
+
+      if (currentTable) {
+        await updateTable(currentTable.id, { 
+            status: 'Available',
+            reservation_time: '' // Xóa giờ đặt (nếu muốn reset sạch)
+        });
+        
+        // Cập nhật state local để đồng bộ
+        setTables(prev => prev.map(t => 
+            t.id === currentTable.id ? { ...t, status: 'Available' } : t
+        ));
+      }
+
+      // 2. Tải hóa đơn về máy (.txt)
+      const invoiceForPrint = {
+          tableNumber: invoiceData.tableNumber,
+          // Map thêm giá vào item để in ra cho đẹp
+          items: invoiceData.items.map(item => ({
+              ...item,
+              price: getPrice(item.dishName)
+          })),
+          totalAmount: invoiceData.totalAmount,
+          date: new Date().toLocaleString('vi-VN')
+      };
+      downloadInvoice(invoiceForPrint);
+
+      // 3. Xóa đơn hàng khỏi hệ thống
+      removeOrder(invoiceData.tableNumber);
+
+      // 4. Reset giao diện
+      alert(`Thanh toán thành công bàn ${invoiceData.tableNumber}!`);
+      setShowInvoice(false);
+      setInvoiceData(null);
+      setSelectedTable(null);
+
+    } catch (error) {
+      console.error("Lỗi thanh toán:", error);
+      alert("Có lỗi xảy ra khi cập nhật trạng thái bàn.");
+    }
   };
 
   return (
-    <div className="min-h-screen w-full bg-slate-50">
+    <div className="min-h-screen w-full bg-slate-50 relative">
       {/* Header */}
       <div className="bg-white shadow-sm py-3 px-4 sticky top-0 z-10 border-b border-slate-200">
-        <div className="flex items-center justify-between max-w-2xl mx-auto">
-          <div className="flex items-center gap-2">
-            <ChefHat className="h-5 w-5 text-blue-600" />
-            <h1 className="text-blue-600 text-lg">Bếp - Danh Sách Đơn Hàng</h1>
+        <div className="relative flex items-center justify-center max-w-2xl mx-auto">
+          <h1 className="text-blue-600 text-lg font-bold">Kitchen Management</h1>
+          <div className="absolute right-0">
+            <Link to="/kitchen">
+              <Button variant="outline" size="sm" className="h-8 text-xs">
+                Xem Bếp
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -52,32 +150,20 @@ export default function KitchenPage() {
               const isSelected = selectedTable === order.tableNumber;
 
               return (
-                <div
-                  key={order.tableNumber}
-                  className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden"
-                >
-                  {/* Table Header - Clickable */}
+                <div key={order.tableNumber} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                  {/* Table Header Row */}
                   <button
                     onClick={() => handleTableClick(order.tableNumber)}
                     className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white ${
-                        isAllCompleted ? 'bg-green-500' : 'bg-blue-600'
-                      }`}>
-                        {isAllCompleted ? (
-                          <CheckCircle2 className="h-5 w-5" />
-                        ) : (
-                          <span className="text-sm">{order.tableNumber}</span>
-                        )}
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white ${isAllCompleted ? 'bg-green-500' : 'bg-blue-600'}`}>
+                        {isAllCompleted ? <CheckCircle2 className="h-5 w-5" /> : <span className="text-sm">{order.tableNumber}</span>}
                       </div>
                       <div className="text-left">
                         <h3 className="text-slate-800 text-sm">{order.tableNumber}</h3>
                         <p className="text-xs text-slate-500">
-                          {isAllCompleted 
-                            ? 'Đã hoàn tất' 
-                            : `${pendingItems.length} món chờ làm`
-                          }
+                          {isAllCompleted ? 'Sẵn sàng thanh toán' : `${pendingItems.length} món chờ làm`}
                         </p>
                       </div>
                     </div>
@@ -88,47 +174,56 @@ export default function KitchenPage() {
                     </div>
                   </button>
 
-                  {/* Order Details - Expandable */}
+                  {/* Expandable Order Details */}
                   {isSelected && (
                     <div className="border-t border-slate-200 bg-slate-50">
-                      {isAllCompleted ? (
-                        <div className="p-4 text-center">
-                          <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto mb-2" />
-                          <p className="text-slate-600 text-sm">Đã hoàn tất giao món</p>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="p-4 space-y-2">
-                            <h4 className="text-xs text-slate-500 mb-3">Danh sách món cần làm:</h4>
-                            {pendingItems.map((item, index) => (
-                              <div
-                                key={index}
-                                className="bg-white rounded-lg p-3 border border-slate-200 flex items-center justify-between"
-                              >
-                                <div className="flex-1">
-                                  <p className="text-slate-800 text-sm">{item.dishName}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs">
-                                    x{item.quantity}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                      <div className="p-4 space-y-2">
+                        {isAllCompleted ? (
+                           <div className="text-center py-2 text-green-600 text-sm flex items-center justify-center gap-2">
+                             <CheckCircle2 className="h-4 w-4"/> Tất cả món đã hoàn tất
+                           </div>
+                        ) : (
+                          <h4 className="text-xs text-slate-500 mb-3">Danh sách món:</h4>
+                        )}
+                        
+                        {order.items.map((item, index) => (
+                          <div key={index} className="bg-white rounded-lg p-3 border border-slate-200 flex items-center justify-between">
+                            <div className="flex-1">
+                              <p className="text-slate-800 text-sm font-medium">{item.dishName}</p>
+                              <p className="text-xs text-slate-500">
+                                {item.completed ? <span className="text-green-600">Đã xong</span> : <span className="text-amber-600">Đang chờ</span>}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                                x{item.quantity}
+                              </span>
+                            </div>
                           </div>
+                        ))}
+                      </div>
 
-                          {/* Complete Button */}
-                          <div className="p-4 pt-0">
-                            <Button
-                              onClick={() => handleCompleteOrder(order.tableNumber)}
-                              className="w-full h-10 bg-green-600 hover:bg-green-700 text-sm"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Đã Hoàn Thành
-                            </Button>
-                          </div>
-                        </>
-                      )}
+                      {/* Action Buttons */}
+                      <div className="p-4 pt-0 grid grid-cols-2 gap-3">
+                        {!isAllCompleted && (
+                          <Button
+                            onClick={() => handleCompleteOrder(order.tableNumber)}
+                            className="col-span-2 h-10 bg-green-600 hover:bg-green-700 text-sm"
+                          >
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Hoàn Thành Món
+                          </Button>
+                        )}
+                        
+                        {/* Nút Thanh Toán */}
+                        <Button
+                          onClick={() => handleOpenInvoice(order)}
+                          className={`h-10 text-sm ${!isAllCompleted ? 'col-span-2 bg-slate-400' : 'col-span-2 bg-blue-600 hover:bg-blue-700'}`}
+                        >
+                          <Receipt className="h-4 w-4 mr-2" />
+                          Thanh Toán & Trả Bàn
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -137,6 +232,81 @@ export default function KitchenPage() {
           </div>
         )}
       </div>
+
+      {/* --- MODAL HÓA ĐƠN --- */}
+      {showInvoice && invoiceData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-blue-600 p-4 flex items-center justify-between text-white">
+              <h2 className="font-bold text-lg flex items-center gap-2">
+                <Receipt className="h-5 w-5" /> Hóa Đơn Tạm Tính
+              </h2>
+              <button onClick={() => setShowInvoice(false)} className="hover:bg-blue-700 p-1 rounded-full">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              <div className="text-center mb-6">
+                <h3 className="text-2xl font-bold text-slate-800">{invoiceData.tableNumber}</h3>
+                <p className="text-sm text-slate-500">{new Date().toLocaleString('vi-VN')}</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border-b border-slate-200 pb-2 mb-2">
+                  <div className="grid grid-cols-12 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    <div className="col-span-6">Món</div>
+                    <div className="col-span-2 text-center">SL</div>
+                    <div className="col-span-4 text-right">Thành tiền</div>
+                  </div>
+                </div>
+
+                {invoiceData.items.map((item, idx) => {
+                  const price = getPrice(item.dishName);
+                  return (
+                    <div key={idx} className="grid grid-cols-12 text-sm py-1">
+                      <div className="col-span-6 font-medium text-slate-700">{item.dishName}</div>
+                      <div className="col-span-2 text-center text-slate-500">x{item.quantity}</div>
+                      <div className="col-span-4 text-right text-slate-700">
+                        {(price * item.quantity).toLocaleString()}đ
+                      </div>
+                    </div>
+                  );
+                })}
+
+                <div className="border-t border-slate-200 pt-4 mt-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-slate-800">Tổng cộng:</span>
+                    <span className="text-xl font-bold text-blue-600">
+                      {invoiceData.totalAmount.toLocaleString()}đ
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50 border-t border-slate-200 flex gap-3">
+              <Button 
+                onClick={() => setShowInvoice(false)}
+                variant="outline" 
+                className="flex-1"
+              >
+                Hủy bỏ
+              </Button>
+              <Button 
+                onClick={handleConfirmPayment}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                <DollarSign className="h-4 w-4 mr-2" />
+                Xác nhận
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

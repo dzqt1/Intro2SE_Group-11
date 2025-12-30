@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const OrderContext = createContext();
 const STORAGE_KEY = 'restaurant_orders';
+const HISTORY_KEY = 'restaurant_transactions'; // Key mới cho lịch sử giao dịch
 
 export function OrderProvider({ children }) {
   // 1. Load dữ liệu ban đầu
@@ -15,10 +16,25 @@ export function OrderProvider({ children }) {
     }
   });
 
+  // Thêm state lưu trữ lịch sử giao dịch (Doanh thu)
+  const [transactionHistory, setTransactionHistory] = useState(() => {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      return [];
+    }
+  });
+
   // 2. Tự động lưu vào localStorage khi state thay đổi
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedOrders));
   }, [savedOrders]);
+
+  // Lưu lịch sử giao dịch vào localStorage
+  useEffect(() => {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(transactionHistory));
+  }, [transactionHistory]);
 
   // 3. Đồng bộ hóa giữa các tab trình duyệt
   useEffect(() => {
@@ -61,6 +77,24 @@ export function OrderProvider({ children }) {
     
     setSavedOrders(newOrders);
     return status;
+  };
+
+  // Hàm Thanh toán: Lưu vào lịch sử và xóa đơn hàng tại bàn
+  const checkoutTable = (tableNumber, totalAmount) => {
+    const orderToClose = savedOrders.find(o => o.tableNumber === tableNumber);
+    if (!orderToClose) return;
+
+    const newTransaction = {
+      id: Date.now(),
+      tableNumber,
+      items: orderToClose.items,
+      totalAmount,
+      timestamp: new Date().toISOString()
+    };
+
+    setTransactionHistory(prev => [...prev, newTransaction]);
+    setSavedOrders(prev => prev.filter(order => order.tableNumber !== tableNumber));
+    return newTransaction;
   };
 
   const getOrderByTable = (tableNumber) => {
@@ -136,12 +170,14 @@ export function OrderProvider({ children }) {
 
   return (
     <OrderContext.Provider value={{ 
-        savedOrders, 
-        saveOrder, 
-        getOrderByTable, 
+        savedOrders,
+        transactionHistory,
+        saveOrder,
+        getOrderByTable,
         markPendingItemsAsCompleted,
-        removeOrder,      // <--- Đã thêm
-        downloadInvoice   // <--- Đã thêm
+        checkoutTable,
+        removeOrder,
+        downloadInvoice,
     }}>
       {children}
     </OrderContext.Provider>

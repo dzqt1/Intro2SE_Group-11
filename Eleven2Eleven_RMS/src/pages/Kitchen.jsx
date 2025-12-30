@@ -7,8 +7,8 @@ import { Link } from 'react-router-dom';
 import { getProducts, getTables, updateTable } from '../data_access/api';
 
 export default function KitchenPage() {
-  // Lấy thêm removeOrder và downloadInvoice từ Context vừa sửa
-  const { savedOrders, markPendingItemsAsCompleted, removeOrder, downloadInvoice } = useOrders();
+  // Lấy thêm removeOrder, checkoutTable và downloadInvoice từ Context
+  const { savedOrders, markPendingItemsAsCompleted, checkoutTable, downloadInvoice } = useOrders();
   
   const [selectedTable, setSelectedTable] = useState(null);
 
@@ -105,8 +105,8 @@ export default function KitchenPage() {
       };
       downloadInvoice(invoiceForPrint);
 
-      // 3. Xóa đơn hàng khỏi hệ thống
-      removeOrder(invoiceData.tableNumber);
+      // 3. Ghi nhận giao dịch & xóa đơn hàng khỏi hệ thống (đồng bộ với Dashboard)
+      checkoutTable(invoiceData.tableNumber, invoiceData.totalAmount);
 
       // 4. Reset giao diện
       alert(`Thanh toán thành công bàn ${invoiceData.tableNumber}!`);

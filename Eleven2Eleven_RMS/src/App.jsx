@@ -15,6 +15,9 @@ import TableInfo from './pages/TableInfo'
 import { AuthProvider } from './contexts/AuthContext'
 import RequireAuth from './components/auth/RequireAuth'
 
+// Import trang Thanh toán & Dashboard mới
+import PaymentDashboard from './pages/PaymentDashboard'
+
 function App() {
   return (
     <AuthProvider>
@@ -37,6 +40,10 @@ function App() {
 
               {/* Route cho trang xem danh sách */}
               <Route path="/table-info" element={<RequireAuth><TableInfo /></RequireAuth>} />
+
+              {/* Route mới cho chức năng Thanh toán và Báo cáo doanh thu */}
+              <Route path="/payment" element={<RequireAuth><PaymentDashboard /></RequireAuth>} />
+              
             </Routes>
           </div>
         </div>

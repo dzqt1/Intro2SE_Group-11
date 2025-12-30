@@ -12,6 +12,7 @@ import {
     ListChecks,    // Icon cho xem danh sách
     Coffee,
     Package,
+    LayoutDashboard, // Thêm icon cho Dashboard/Payment
 } from "lucide-react";
 
 export default function Side_Navbar() {
@@ -28,6 +29,8 @@ export default function Side_Navbar() {
         { name: "Table Info", icon: <ListChecks className={iconStyle} />, path: "/table-info" },
         { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},
         { name: "Ingredient Management", icon: <Package className={iconStyle} />, path: "/ingredients"},
+        // Thêm mục Payment & Dashboard vào danh sách
+        { name: "Payment & Sales", icon: <LayoutDashboard className={iconStyle} />, path: "/payment"},
     ]
 
     function canAccess(path) {
@@ -36,7 +39,7 @@ export default function Side_Navbar() {
         if (rn === 'admin') return true
         if (rn === 'manager') return path !== '/users'
         if (rn.includes('kitchen')) return ['/orders','/ingredients','/kitchen'].includes(path)
-        if (rn === 'staff' || rn === 'waiter') return ['/orders','/reservation','/table-info'].includes(path)
+        if (rn === 'staff' || rn === 'waiter') return ['/orders','/reservation','/table-info', '/payment'].includes(path)
         return false
     }
     

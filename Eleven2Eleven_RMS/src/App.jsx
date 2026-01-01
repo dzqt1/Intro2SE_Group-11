@@ -12,6 +12,7 @@ import IngredientManagement from './pages/IngredientManagement'
 // Đã xóa import TableProvider ở đây vì không dùng nữa
 import TableReservation from './pages/TableReservation'
 import TableInfo from './pages/TableInfo'
+import SeatingManagement from './pages/SeatingManagement'
 import { AuthProvider } from './contexts/AuthContext'
 import RequireAuth from './components/auth/RequireAuth'
 
@@ -24,7 +25,7 @@ function App() {
       <OrderProvider>
         {/* Đã xóa thẻ <TableProvider> bọc ngoài */}
         
-        <div className="flex flex-row h-screen">
+        <div className="flex flex-row h-auto min-h-screen">
           <Side_Navbar />
           <div className="flex-1 overflow-y-scroll">
             <Routes>
@@ -35,6 +36,8 @@ function App() {
               <Route path="/ingredients" element={<RequireAuth><IngredientManagement /></RequireAuth>} />
               <Route path="/kitchen" element={<RequireAuth><Kitchen /></RequireAuth>} />
               
+              <Route path="/seating" element={<RequireAuth><SeatingManagement /></RequireAuth>} />
+
               {/* Route cho trang điền form */}
               <Route path="/reservation" element={<RequireAuth><TableReservation /></RequireAuth>} />
 

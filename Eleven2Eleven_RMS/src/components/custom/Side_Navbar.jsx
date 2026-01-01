@@ -25,6 +25,7 @@ export default function Side_Navbar() {
         { name: "User Management", icon: <Users className={iconStyle} />, path: "/users" },
         { name: "Order Management", icon: <NotebookPen className={iconStyle} />, path: "/orders"},
         { name: "Order Statement", icon: <NotebookPen className={iconStyle} />, path: "/kitchen"},
+        { name: "Seating Management", icon: <FlaskConical className={iconStyle} />, path: "/seating"},
         { name: "Table Reservation", icon: <CalendarPlus className={iconStyle} />, path: "/reservation" },
         { name: "Table Info", icon: <ListChecks className={iconStyle} />, path: "/table-info" },
         { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},
@@ -46,7 +47,7 @@ export default function Side_Navbar() {
     const active_user = {name: "Hai Le", role: "Manager"};
 
     return (
-        <aside className="flex flex-col w-80 min-h-screen bg-gray-200 border-r">
+        <aside className="flex flex-col w-80 min-h-screen h-auto bg-gray-200 border-r">
             <div className="flex-1 flex flex-col">
                 <div className="p-6 w-full h-50 border-b items-center justify-center flex flex-col gap-2">
                     <Link to="/" className="no-underline flex flex-col items-center gap-2">

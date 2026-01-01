@@ -135,6 +135,13 @@ export const getRecipesForProduct = async (product_id) => {
 export const getRecipe = (product_id, ingredient_id) => getNested('Recipe', [product_id, ingredient_id])
 export const deleteRecipe = (product_id, ingredient_id) => remove(ref(db, `Recipe/${product_id}/${ingredient_id}`))
 
+// Area
+export const getAreas = () => getCollection('Area')
+export const getArea = (id) => getById('Area', id)
+export const addArea = (data) => createItem('Area', data)
+export const updateArea = (id, data) => updateItem('Area', id, data)
+export const deleteArea = (id) => deleteItem('Area', id)
+
 // Table (seating)
 export const getTables = () => getCollection('Table')
 export const getTable = (id) => getById('Table', id)

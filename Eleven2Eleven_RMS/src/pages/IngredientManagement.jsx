@@ -1,9 +1,15 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Trash2, Plus, Search, Edit } from 'lucide-react'
 import * as api from '@/data_access/api'
 
@@ -32,7 +38,9 @@ export default function IngredientManagement() {
   }, [])
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const rowRefs = useRef({})
   const [newItem, setNewItem] = useState({
     name: '',
     unit: '',
@@ -59,7 +67,7 @@ export default function IngredientManagement() {
   const handleEditClick = (item) => {
     setEditingId(item.id)
     setNewItem(item)
-    setShowForm(true)
+    setIsEditDialogOpen(true)
   }
 
   const handleSave = async () => {
@@ -79,6 +87,13 @@ export default function IngredientManagement() {
         setIngredients(ingredients.map(item =>
           item.id === editingId ? updated : item
         ))
+        setIsEditDialogOpen(false)
+        setEditingId(null)
+        
+        // Scroll to updated item
+        setTimeout(() => {
+          rowRefs.current[editingId]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
       } else {
         // Add new ingredient
         const created = await api.addIngredient({
@@ -95,6 +110,7 @@ export default function IngredientManagement() {
         unit: '',
         quantity: ''
       })
+      setIsEditDialogOpen(false)
     } catch (err) {
       console.error('Error saving ingredient:', err)
       alert('Failed to save ingredient')
@@ -231,6 +247,66 @@ export default function IngredientManagement() {
               </Card>
             )}
 
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Ingredient</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">Ingredient Name *</Label>
+                    <Input
+                      name="name"
+                      value={newItem.name}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Chicken"
+                      className="h-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">Unit *</Label>
+                    <Input
+                      name="unit"
+                      value={newItem.unit}
+                      onChange={handleInputChange}
+                      placeholder="e.g., kg, gram, liter"
+                      className="h-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-semibold text-gray-700 mb-2 block">Quantity</Label>
+                    <Input
+                      type="number"
+                      name="quantity"
+                      value={newItem.quantity}
+                      onChange={handleInputChange}
+                      placeholder="0"
+                      step="0.01"
+                      className="h-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={handleSave}
+                    className="flex-1 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors duration-200"
+                  >
+                    Update
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="flex-1 px-5 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             {/* Ingredients Table */}
             <Card className="mb-6 border border-gray-200 bg-white shadow-sm overflow-hidden">
               <table className="w-full border-collapse" style={{ tableLayout: 'fixed' }}>
@@ -259,7 +335,11 @@ export default function IngredientManagement() {
                     </tr>
                   ) : (
                     filteredIngredients.map((item, idx) => (
-                      <tr key={item.id} className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                      <tr 
+                        key={item.id} 
+                        ref={el => rowRefs.current[item.id] = el}
+                        className={`border-b border-gray-100 hover:bg-blue-50 transition-colors duration-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                      >
                         <td className="px-6 py-4 text-sm font-semibold text-gray-900">{item.id}</td>
                         <td className="px-6 py-4 text-sm text-gray-700">{item.name}</td>
                         <td className="px-6 py-4 text-sm">

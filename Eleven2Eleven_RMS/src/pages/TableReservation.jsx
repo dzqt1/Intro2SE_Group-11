@@ -87,8 +87,8 @@ export default function TableReservation() {
     return `${String(h).padStart(2, '0')}:${minutes} ${ampm}`;
   };
 
-  // 4. SUBMIT FORM
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
+    // 1. Validate cơ bản
     if (!formData.customerName || !formData.phoneNumber || !formData.tableNumber || !formData.guestCount || !formData.date || !formData.time) {
       setError("Please fill in all fields!");
       return; 
@@ -105,11 +105,52 @@ export default function TableReservation() {
     }
 
     setIsSubmitting(true);
+    
     try {
+        // Lấy thông tin bàn đang chọn
         const selectedTableObj = availableTables.find(t => t.name === formData.tableNumber);
         const tableId = selectedTableObj ? selectedTableObj.id : "";
+        
+        // Format giờ hiện tại sang AM/PM để so sánh với Database
         const formattedTime = formatTimeAMPM(formData.time);
 
+        // --- BƯỚC MỚI: KIỂM TRA TRÙNG LỊCH (CONFLICT CHECK) ---
+        
+        // A. Tải dữ liệu đặt bàn hiện có về
+        const checkRes = await fetch("https://eleven2eleven-rms-db-default-rtdb.asia-southeast1.firebasedatabase.app/Reservation.json");
+        const checkData = await checkRes.json();
+        
+        let isConflict = false;
+
+        // B. Duyệt qua danh sách để tìm trùng
+        if (checkData) {
+            for (const key in checkData) {
+                const res = checkData[key];
+                // Bỏ qua các dữ liệu rác
+                if (!res || key === "res_sample") continue;
+
+                // Điều kiện trùng: Cùng ID Bàn + Cùng Ngày + Cùng Giờ
+                // Lưu ý: res.table_id có thể là số hoặc chuỗi, nên dùng so sánh lỏng (==) hoặc ép kiểu
+                if (String(res.table_id) === String(tableId) && 
+                    res.date === formData.date && 
+                    res.time === formattedTime) { // So sánh chuỗi thời gian AM/PM
+                    
+                    isConflict = true;
+                    break; // Tìm thấy 1 cái trùng là dừng ngay
+                }
+            }
+        }
+
+        // C. Nếu trùng thì báo lỗi và THOÁT luôn (return)
+        if (isConflict) {
+            setError(`Bàn này đã được đặt vào thời gian này. Vui lòng chọn giờ hoặc bàn khác!`);
+            setIsSubmitting(false); // Tắt loading
+            return; // Dừng hàm, không chạy đoạn POST bên dưới nữa
+        }
+        
+        // --------------------------------------------------------
+
+        // Nếu không trùng thì mới tạo object và lưu
         const newReservationData = {
             customer_name: formData.customerName,
             phone: formData.phoneNumber,
@@ -130,8 +171,6 @@ export default function TableReservation() {
 
         if (!response.ok) throw new Error("Failed to save reservation.");
 
-        // Đã xóa dòng addReservation(formData) ở đây
-        // Chỉ cần chuyển trang, trang TableInfo sẽ tự fetch lại dữ liệu mới từ Firebase
         navigate("/table-info");
 
     } catch (err) {
@@ -154,7 +193,6 @@ export default function TableReservation() {
           <CardTitle className="text-4xl font-serif text-gray-800 tracking-wide uppercase">
             Create Reservation
           </CardTitle>
-          <p className="text-sm text-gray-500 mt-2">Connected to Firebase Database</p>
         </CardHeader>
 
         <CardContent className="px-8 py-6">
@@ -163,13 +201,13 @@ export default function TableReservation() {
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Customer Name</FieldLabel>
                 <FieldContent>
-                  <Input name="customerName" placeholder="Ex: John Doe" className="h-12 text-lg bg-gray-100/50" value={formData.customerName} onChange={handleChange} disabled={isSubmitting} />
+                  <Input name="customerName" className="h-12 text-lg bg-gray-100/50" value={formData.customerName} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Phone Number</FieldLabel>
                 <FieldContent>
-                  <Input name="phoneNumber" placeholder="Ex: 0912..." className="h-12 text-lg bg-gray-100/50" value={formData.phoneNumber} onChange={handleChange} disabled={isSubmitting} />
+                  <Input name="phoneNumber" className="h-12 text-lg bg-gray-100/50" value={formData.phoneNumber} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
             </div>
@@ -192,7 +230,7 @@ export default function TableReservation() {
               <Field orientation="vertical">
                 <FieldLabel className="text-lg font-serif text-gray-700 font-medium">Number of Guests</FieldLabel>
                 <FieldContent>
-                  <Input name="guestCount" type="number" min="1" placeholder="Auto-filled from table" className="h-12 text-lg bg-gray-100/50" value={formData.guestCount} onChange={handleChange} disabled={isSubmitting} />
+                  <Input name="guestCount" type="number" min="1" className="h-12 text-lg bg-gray-100/50" value={formData.guestCount} onChange={handleChange} disabled={isSubmitting} />
                 </FieldContent>
               </Field>
             </div>

@@ -54,7 +54,7 @@ export default function SeatingManagement() {
 		try {
 			const list = await getAreas();
 			const normalized = (list || []).map(a => ({ id: a.id, name: a.name || a.title || `Area ${a.id}` }));
-			normalized.sort((a, b) => (a.id < b.id ? 1 : -1));
+			normalized.sort((a, b) => (a.id - b.id));
 			setAreas(normalized);
 		} catch (err) {
 			console.error("Failed to load areas", err);

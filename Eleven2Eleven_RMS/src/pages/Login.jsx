@@ -48,7 +48,7 @@ function Login() {
             if (remember) localStorage.setItem('rememberUsername', username.trim())
             else localStorage.removeItem('rememberUsername')
             
-            navigate('/orders')
+            navigate('/dashboard') // Chuyển đến trang dashboard sau khi đăng nhập thành công
         } catch (err) {
             console.error("Login error:", err)
             

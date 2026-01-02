@@ -2,7 +2,8 @@ import { useState } from 'react'
 import UserManagement from './pages/UserManagement'
 import Side_Navbar from '@/components/custom/Side_Navbar'
 import './App.css'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './contexts/AuthContext'
 import Orders from './pages/Order'
 import Login from './pages/Login'
 import MenuManagement from './pages/MenuManagement'
@@ -20,6 +21,11 @@ import RequireAuth from './components/auth/RequireAuth'
 import PaymentDashboard from './pages/PaymentDashboard'
 
 function App() {
+  function HomeRedirect() {
+    const auth = useAuth()
+    return auth && auth.user ? <Navigate to="/dashboard" replace /> : <Login />
+  }
+
   return (
     <AuthProvider>
       <OrderProvider>
@@ -29,7 +35,7 @@ function App() {
           <Side_Navbar />
           <div className="flex-1 overflow-y-scroll">
             <Routes>
-              <Route path="/" element={<Login />} />
+              <Route path="/" element={<HomeRedirect />} />
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><UserManagement /></RequireAuth>} />
               <Route path="/menu" element={<RequireAuth><MenuManagement /></RequireAuth>} />
@@ -45,7 +51,7 @@ function App() {
               <Route path="/table-info" element={<RequireAuth><TableInfo /></RequireAuth>} />
 
               {/* Route mới cho chức năng Thanh toán và Báo cáo doanh thu */}
-              <Route path="/payment" element={<RequireAuth><PaymentDashboard /></RequireAuth>} />
+              <Route path="/dashboard" element={<RequireAuth><PaymentDashboard /></RequireAuth>} />
               
             </Routes>
           </div>

@@ -22,17 +22,16 @@ export default function Side_Navbar() {
     const auth = useAuth()
     const roleName = auth?.user?.roleName || auth?.user?.role || ''
     const items = [
-        { name: "User Management", icon: <Users className={iconStyle} />, path: "/users" },
+        { name: "Payment & Sales", icon: <LayoutDashboard className={iconStyle} />, path: "/dashboard" },
         { name: "Order Management", icon: <NotebookPen className={iconStyle} />, path: "/orders"},
         { name: "Order Statement", icon: <NotebookPen className={iconStyle} />, path: "/kitchen"},
         { name: "Seating Management", icon: <FlaskConical className={iconStyle} />, path: "/seating"},
         { name: "Table Reservation", icon: <CalendarPlus className={iconStyle} />, path: "/reservation" },
-        { name: "Table Info", icon: <ListChecks className={iconStyle} />, path: "/table-info" },
+        { name: "Reservation Info", icon: <ListChecks className={iconStyle} />, path: "/table-info" },
         { name: "Menu Management", icon: <Coffee className={iconStyle} />, path: "/menu"},
         { name: "Ingredient Management", icon: <Package className={iconStyle} />, path: "/ingredients"},
-        // Thêm mục Payment & Dashboard vào danh sách
-        { name: "Payment & Sales", icon: <LayoutDashboard className={iconStyle} />, path: "/payment"},
-    ]
+        { name: "User Management", icon: <Users className={iconStyle} />, path: "/users"},
+    ];
 
     function canAccess(path) {
         if (!roleName) return false

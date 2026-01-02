@@ -1,9 +1,16 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Trash2, Plus, Search, Filter, Edit, Eye, EyeOff } from 'lucide-react'
 import * as api from '@/data_access/api'
 
@@ -15,14 +22,17 @@ export default function MenuManagement() {
   const [selectedCategory, setSelectedCategory] = useState('All')
   const [searchTerm, setSearchTerm] = useState('')
   const [showForm, setShowForm] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const itemRefs = useRef({})
   const [newItem, setNewItem] = useState({
     name: '',
     description: '',
     price: '',
     category: '',
     preparationTime: '',
-    available: true
+    available: true,
+    image: ''
   })
 
   // Load menu items and categories from Firebase
@@ -70,13 +80,21 @@ export default function MenuManagement() {
         price: parseFloat(newItem.price),
         category: newItem.category,
         preparationTime: parseInt(newItem.preparationTime) || 0,
-        available: newItem.available
+        available: newItem.available,
+        image: newItem.image || ''
       }
 
       if (editingId) {
         // Update existing
         const updated = await api.updateProduct(editingId, data)
         setMenuItems(menuItems.map(item => item.id === editingId ? updated : item))
+        setIsEditDialogOpen(false)
+        setEditingId(null)
+        
+        // Scroll to updated item
+        setTimeout(() => {
+          itemRefs.current[editingId]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }, 100)
       } else {
         // Add new
         const created = await api.addProduct(data)
@@ -118,10 +136,11 @@ export default function MenuManagement() {
       price: item.price,
       category: item.category,
       preparationTime: item.preparationTime || 0,
-      available: item.available
+      available: item.available,
+      image: item.image || ''
     })
     setEditingId(item.id)
-    setShowForm(true)
+    setIsEditDialogOpen(true)
   }
 
   const toggleAvailability = async (id) => {
@@ -141,13 +160,15 @@ export default function MenuManagement() {
 
   const handleCancel = () => {
     setShowForm(false)
+    setIsEditDialogOpen(false)
     setNewItem({
       name: '',
       description: '',
       price: '',
       category: '',
       preparationTime: '',
-      available: true
+      available: true,
+      image: ''
     })
     setEditingId(null)
   }
@@ -278,6 +299,16 @@ export default function MenuManagement() {
                       className="mt-2"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <Label className="text-sm font-medium text-gray-700">Image URL</Label>
+                    <Input
+                      placeholder="e.g., https://example.com/image.jpg"
+                      name="image"
+                      value={newItem.image}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-4">
                   <Button
@@ -297,6 +328,98 @@ export default function MenuManagement() {
               </Card>
             )}
 
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Menu Item</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Item Name</Label>
+                    <Input
+                      placeholder="e.g., Black Coffee"
+                      name="name"
+                      value={newItem.name}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Category</Label>
+                    <select
+                      name="category"
+                      value={newItem.category}
+                      onChange={handleInputChange}
+                      className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select category</option>
+                      {categories.filter(cat => cat !== 'All').map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Price ($)</Label>
+                    <Input
+                      placeholder="e.g., 25000"
+                      type="number"
+                      name="price"
+                      value={newItem.price}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Preparation Time (minutes)</Label>
+                    <Input
+                      placeholder="e.g., 5"
+                      type="number"
+                      name="preparationTime"
+                      value={newItem.preparationTime}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Description</Label>
+                    <Input
+                      placeholder="Brief description of the item"
+                      name="description"
+                      value={newItem.description}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Image URL</Label>
+                    <Input
+                      placeholder="e.g., https://example.com/image.jpg"
+                      name="image"
+                      value={newItem.image}
+                      onChange={handleInputChange}
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={handleAddItem}
+                    className="flex-1 bg-blue-500 hover:bg-blue-600"
+                  >
+                    Update Item
+                  </Button>
+                  <Button
+                    onClick={handleCancel}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             {/* Menu Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredItems.length === 0 ? (
@@ -307,80 +430,112 @@ export default function MenuManagement() {
                 </div>
               ) : (
                 filteredItems.map((item) => (
-                  <Card key={item.id} className="p-5 border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                    {/* Status Badge */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-900 line-clamp-2">{item.name}</h3>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ml-2 whitespace-nowrap ${
-                        item.available 
-                          ? 'bg-green-100 text-green-700' 
-                          : 'bg-red-100 text-red-700'
-                      }`}>
-                        {item.available ? '✓ Available' : '✗ Unavailable'}
-                      </span>
+                  <Card 
+                    key={item.id} 
+                    ref={el => itemRefs.current[item.id] = el}
+                    className="p-0 border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+                  >
+                    {/* Image Section */}
+                    <div className="h-48 bg-gradient-to-br from-gray-200 to-gray-300 overflow-hidden">
+                      {item.image ? (
+                        <img 
+                          src={item.image} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none'
+                            e.target.parentElement.classList.add('flex', 'items-center', 'justify-center')
+                            if (!e.target.parentElement.querySelector('.fallback')) {
+                              const fallback = document.createElement('span')
+                              fallback.className = 'text-gray-500 text-sm fallback'
+                              fallback.textContent = '🍽️ No Image'
+                              e.target.parentElement.appendChild(fallback)
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-gray-500 text-3xl">🍽️</span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Category and Description */}
-                    <div className="mb-4">
-                      <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-2">
-                        {item.category}
-                      </span>
-                      <p className="text-sm text-gray-600 line-clamp-2">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    {/* Price and Prep Time */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Price</p>
-                        <p className="text-2xl font-bold text-blue-600 mt-1">${item.price}</p>
+                    {/* Content Section */}
+                    <div className="p-5">
+                      {/* Status Badge */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-gray-900 line-clamp-2">{item.name}</h3>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ml-2 whitespace-nowrap ${
+                          item.available 
+                            ? 'bg-green-100 text-green-700' 
+                            : 'bg-red-100 text-red-700'
+                        }`}>
+                          {item.available ? '✓ Available' : '✗ Unavailable'}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Prep Time</p>
-                        <p className="text-2xl font-bold text-gray-700 mt-1">{item.preparationTime} min</p>
-                      </div>
-                    </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditItem(item)}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-sm"
-                      >
-                        <Edit className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => toggleAvailability(item.id)}
-                        className={`px-3.5 py-2.5 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-1.5 text-sm ${
-                          item.available
-                            ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
-                            : 'bg-green-100 hover:bg-green-200 text-green-700'
-                        }`}
-                        title={item.available ? 'Hide item' : 'Show item'}
-                      >
-                        {item.available ? (
-                          <>
-                            <EyeOff className="w-4 h-4" />
-                            Hide
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4" />
-                            Show
-                          </>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2.5 px-3.5 rounded-lg transition-colors duration-200 flex items-center justify-center"
-                        title="Delete item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Category and Description */}
+                      <div className="mb-4">
+                        <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold mb-2">
+                          {item.category}
+                        </span>
+                        <p className="text-sm text-gray-600 line-clamp-2">
+                          {item.description}
+                        </p>
+                      </div>
+
+                      {/* Price and Prep Time */}
+                      <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Price</p>
+                          <p className="text-2xl font-bold text-blue-600 mt-1">${item.price}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wider font-semibold">Prep Time</p>
+                          <p className="text-2xl font-bold text-gray-700 mt-1">{item.preparationTime} min</p>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditItem(item)}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-3 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 text-sm"
+                        >
+                          <Edit className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => toggleAvailability(item.id)}
+                          className={`px-3.5 py-2.5 rounded-lg font-semibold transition-colors duration-200 flex items-center justify-center gap-1.5 text-sm ${
+                            item.available
+                              ? 'bg-orange-100 hover:bg-orange-200 text-orange-700'
+                              : 'bg-green-100 hover:bg-green-200 text-green-700'
+                          }`}
+                          title={item.available ? 'Hide item' : 'Show item'}
+                        >
+                          {item.available ? (
+                            <>
+                              <EyeOff className="w-4 h-4" />
+                              Hide
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-4 h-4" />
+                              Show
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2.5 px-3.5 rounded-lg transition-colors duration-200 flex items-center justify-center"
+                          title="Delete item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </Card>
                 ))

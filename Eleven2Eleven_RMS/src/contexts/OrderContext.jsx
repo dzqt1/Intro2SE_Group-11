@@ -1,50 +1,35 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import * as api from '../data_access/api'
 
 const OrderContext = createContext();
-const STORAGE_KEY = 'restaurant_orders';
-const HISTORY_KEY = 'restaurant_transactions'; // Key mới cho lịch sử giao dịch
 
 export function OrderProvider({ children }) {
-  // 1. Load dữ liệu ban đầu
-  const [savedOrders, setSavedOrders] = useState(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Error loading orders:', error);
-      return [];
-    }
-  });
+  // Orders currently being processed (local state, not persisted)
+  const [savedOrders, setSavedOrders] = useState([]);
 
-  // Thêm state lưu trữ lịch sử giao dịch (Doanh thu)
-  const [transactionHistory, setTransactionHistory] = useState(() => {
-    try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      return [];
-    }
-  });
+  // Transaction history (fetched from Firebase)
+  const [transactionHistory, setTransactionHistory] = useState([]);
 
-  // 2. Tự động lưu vào localStorage khi state thay đổi
+  // Load transaction history from Firebase on mount
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(savedOrders));
-  }, [savedOrders]);
-
-  // Lưu lịch sử giao dịch vào localStorage
-  useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(transactionHistory));
-  }, [transactionHistory]);
-
-  // 3. Đồng bộ hóa giữa các tab trình duyệt
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        setSavedOrders(JSON.parse(e.newValue));
+    const loadTransactionHistory = async () => {
+      try {
+        const orders = await api.getOrders()
+        const transactions = (orders || []).map(order => ({
+          id: order.id,
+          tableNumber: order.table_number ?? order.tableNumber,
+          table_number: order.table_number,
+          items: order.items || [],
+          totalAmount: order.total_amount ?? order.totalAmount,
+          total_amount: order.total_amount,
+          timestamp: order.timestamp
+        }))
+        setTransactionHistory(transactions)
+      } catch (err) {
+        console.error('[OrderContext] Error loading transactions:', err)
       }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    }
+    loadTransactionHistory()
   }, []);
 
   // --- CÁC HÀM XỬ LÝ LOGIC ---
@@ -80,39 +65,112 @@ export function OrderProvider({ children }) {
   };
 
   // Hàm Thanh toán: Lưu vào lịch sử và xóa đơn hàng tại bàn
-  const checkoutTable = (tableNumber, totalAmount) => {
+  const checkoutTable = async (tableNumber, totalAmount) => {
     const orderToClose = savedOrders.find(o => o.tableNumber === tableNumber);
     if (!orderToClose) return;
 
-    const newTransaction = {
-      id: Date.now(),
-      tableNumber,
+    // Build snake_case payload for DB
+    const newTransactionSnake = {
+      table_number: tableNumber,
       items: orderToClose.items,
-      totalAmount,
+      total_amount: totalAmount,
       timestamp: new Date().toISOString()
     };
 
-    setTransactionHistory(prev => [...prev, newTransaction]);
-    setSavedOrders(prev => prev.filter(order => order.tableNumber !== tableNumber));
-    return newTransaction;
+    // local representation with both camelCase and snake_case
+    const newTransactionLocal = {
+      tableNumber: tableNumber,
+      items: orderToClose.items,
+      totalAmount: totalAmount,
+      total_amount: totalAmount,
+      table_number: tableNumber,
+      timestamp: newTransactionSnake.timestamp
+    }
+
+    try {
+      const created = await api.addOrder(newTransactionSnake)
+      const savedTx = created && created.id ? { ...newTransactionLocal, id: created.id } : newTransactionLocal
+      
+      // Update local transaction history
+      setTransactionHistory(prev => [...prev, savedTx]);
+      // Remove from active orders
+      setSavedOrders(prev => prev.filter(order => order.tableNumber !== tableNumber));
+      return savedTx;
+    } catch (err) {
+      console.error('Error saving order to Firebase:', err)
+      // still update local state as fallback
+      const savedTx = { ...newTransactionLocal, id: Date.now() }
+      setTransactionHistory(prev => [...prev, savedTx]);
+      setSavedOrders(prev => prev.filter(order => order.tableNumber !== tableNumber));
+      return savedTx;
+    }
   };
 
   const getOrderByTable = (tableNumber) => {
     return savedOrders.find(order => order.tableNumber === tableNumber);
   };
 
-  const markPendingItemsAsCompleted = (tableNumber) => {
-    setSavedOrders(prevOrders => {
-      return prevOrders.map(order => {
-        if (order.tableNumber === tableNumber) {
-          return {
-            ...order,
-            items: order.items.map(item => ({ ...item, completed: true }))
-          };
+  const markPendingItemsAsCompleted = async (tableNumber) => {
+    try {
+      // Build consumption map: ingredientId -> totalNeeded
+      const consumption = new Map()
+
+      const order = savedOrders.find(o => o.tableNumber === tableNumber)
+      if (order) {
+        const products = await api.getProducts()
+        for (const item of order.items) {
+          const targetName = String(item.dishName || '').trim().toLowerCase()
+          const prod = (products || []).find(p => String(p.name || '').trim().toLowerCase() === targetName)
+          if (!prod) {
+            continue
+          }
+          const recs = await api.getRecipesForProduct(prod.id)
+          for (const r of (recs || [])) {
+            // determine ingredient id from possible fields
+            const rawId = r.ingredient_id ?? r.ingredientId ?? null
+            if (rawId === null || rawId === undefined || String(rawId).trim() === '') {
+              continue
+            }
+            const ingId = rawId
+            const perProductQty = Number(r.quantity ?? r.qty ?? r.amount ?? 0)
+            const totalNeeded = perProductQty * (Number(item.quantity) || 0)
+            const key = String(ingId)
+            consumption.set(key, (consumption.get(key) || 0) + totalNeeded)
+          }
         }
-        return order;
+
+        // Apply consumption to Ingredient records
+        for (const [ingIdStr, needed] of consumption.entries()) {
+          const ingId = Number(ingIdStr).toString() === ingIdStr ? Number(ingIdStr) : ingIdStr
+          try {
+            const current = await api.getIngredient(ingId)
+            const currentQty = Number(current?.quantity) || 0
+            const newQty = Math.max(0, currentQty - needed)
+            await api.updateIngredient(ingId, { quantity: newQty })
+          } catch (err) {
+            console.error('Error updating ingredient', ingIdStr, err)
+          }
+        }
+      }
+
+      // mark items completed in state
+      setSavedOrders(prevOrders => {
+        return prevOrders.map(order => {
+          if (order.tableNumber === tableNumber) {
+            return {
+              ...order,
+              items: order.items.map(item => ({ ...item, completed: true }))
+            };
+          }
+          return order;
+        });
       });
-    });
+
+      return true
+    } catch (err) {
+      console.error('Error in markPendingItemsAsCompleted:', err)
+      throw err
+    }
   };
 
   // --- [MỚI] HÀM XÓA ĐƠN HÀNG (Dùng khi thanh toán xong) ---
@@ -149,7 +207,8 @@ export function OrderProvider({ children }) {
     });
 
     content += `--------------------------------\n`;
-    content += `TỔNG CỘNG:          ${invoiceData.totalAmount.toLocaleString('vi-VN')} VNĐ\n`;
+    const total = invoiceData.total_amount ?? invoiceData.totalAmount ?? 0
+    content += `TỔNG CỘNG:          ${total.toLocaleString('vi-VN')} VNĐ\n`;
     content += `================================\n`;
     content += `    Cảm ơn và hẹn gặp lại!      \n`;
 
@@ -159,7 +218,8 @@ export function OrderProvider({ children }) {
     const link = document.createElement('a');
     link.href = url;
     // Tên file: HoaDon_Ban1_TIMESTAMP.txt
-    link.download = `HoaDon_${invoiceData.tableNumber.replace(/\s/g, '')}_${Date.now()}.txt`;
+    const tableLabel = invoiceData.table_number ?? invoiceData.tableNumber ?? 'Unknown'
+    link.download = `HoaDon_${String(tableLabel).replace(/\s/g, '')}_${Date.now()}.txt`;
     document.body.appendChild(link);
     link.click();
     

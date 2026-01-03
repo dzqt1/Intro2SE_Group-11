@@ -128,9 +128,10 @@ export const deleteIngredient = (id) => deleteItem('Ingredient', id)
 // Recipe (nested by product_id -> ingredient_id)
 export const setRecipe = (product_id, ingredient_id, data) => setNested('Recipe', [product_id, ingredient_id], data)
 export const getRecipesForProduct = async (product_id) => {
-	const data = await getNested('Recipe', [product_id])
-	if (!data) return []
-	return mapObjectToArray(data)
+	const q = query(ref(db, 'Recipe'), orderByChild('product_id'), equalTo(product_id))
+	const snap = await get(q)
+	if (!snap.exists()) return []
+	return mapObjectToArray(snap.val())
 }
 export const getRecipe = (product_id, ingredient_id) => getNested('Recipe', [product_id, ingredient_id])
 export const deleteRecipe = (product_id, ingredient_id) => remove(ref(db, `Recipe/${product_id}/${ingredient_id}`))

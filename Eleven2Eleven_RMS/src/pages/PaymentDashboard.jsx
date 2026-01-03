@@ -1,68 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import { useOrders } from '../contexts/OrderContext';
-import { getProducts, getTables, updateTable } from '../data_access/api';
+import { getProducts, getTables, updateTable, getOrders } from '../data_access/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Receipt, DollarSign, Package, History } from 'lucide-react';
 
 export default function PaymentDashboard() {
-  const { savedOrders, transactionHistory, checkoutTable, downloadInvoice } = useOrders();
+  const { savedOrders, checkoutTable, downloadInvoice } = useOrders();
   const [products, setProducts] = useState([]);
   const [tables, setTables] = useState([]);
   const [selectedTable, setSelectedTable] = useState('');
   const [selectedHistoryId, setSelectedHistoryId] = useState('');
   const [billMode, setBillMode] = useState('pending'); // 'pending' | 'history'
+  const [firebaseOrders, setFirebaseOrders] = useState([]); // Orders from Firebase
+  const [loading, setLoading] = useState(true);
 
-  // Load danh sách sản phẩm để lấy giá tiền & danh sách bàn để cập nhật trạng thái
+  // Load danh sách sản phẩm để lấy giá tiền & danh sách bàn để cập nhật trạng thái & orders từ Firebase
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prods, tabs] = await Promise.all([getProducts(), getTables()]);
+        setLoading(true)
+        const [prods, tabs, orders] = await Promise.all([getProducts(), getTables(), getOrders()]);
         setProducts(prods || []);
         setTables(tabs || []);
+        const normalizedOrders = (orders || []).map(o => ({
+          id: o.id,
+          tableNumber: o.table_number ?? o.tableNumber,
+          table_number: o.table_number,
+          items: o.items || [],
+          totalAmount: o.total_amount ?? o.totalAmount,
+          total_amount: o.total_amount,
+          timestamp: o.timestamp
+        }))
+        setFirebaseOrders(normalizedOrders)
       } catch (err) {
         console.error('Lỗi load dữ liệu PaymentDashboard:', err);
+      } finally {
+        setLoading(false)
       }
     };
     fetchData();
   }, []);
 
-  // Tính toán doanh thu tổng từ lịch sử
-  const totalRevenue = transactionHistory?.reduce((sum, t) => sum + (t.totalAmount || 0), 0) || 0;
-  const totalBills = transactionHistory?.length || 0;
+  // Tính toán doanh thu tổng từ Firebase orders
+  const totalRevenue = firebaseOrders?.reduce((sum, t) => sum + (t.total_amount ?? t.totalAmount ?? 0), 0) || 0;
+  const totalBills = firebaseOrders?.length || 0;
 
-  // --- Tính toán dữ liệu cho đồ thị ngày / tháng ---
+  // --- Tính toán dữ liệu cho đồ thị ngày / tháng từ Firebase orders ---
   const dailyStats = React.useMemo(() => {
     const map = {};
-    (transactionHistory || []).forEach((t) => {
+    (firebaseOrders || []).forEach((t) => {
       if (!t.timestamp) return;
       const d = new Date(t.timestamp);
       if (Number.isNaN(d.getTime())) return;
       const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
       if (!map[key]) map[key] = { date: key, revenue: 0, count: 0 };
-      map[key].revenue += t.totalAmount || 0;
+      map[key].revenue += t.total_amount ?? t.totalAmount ?? 0;
       map[key].count += 1;
     });
     return Object.values(map)
       .sort((a, b) => (a.date < b.date ? -1 : 1))
       .slice(-7); // 7 ngày gần nhất
-  }, [transactionHistory]);
+  }, [firebaseOrders]);
 
   const monthlyStats = React.useMemo(() => {
     const map = {};
-    (transactionHistory || []).forEach((t) => {
+    (firebaseOrders || []).forEach((t) => {
       if (!t.timestamp) return;
       const d = new Date(t.timestamp);
       if (Number.isNaN(d.getTime())) return;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM
       if (!map[key]) map[key] = { month: key, revenue: 0, count: 0 };
-      map[key].revenue += t.totalAmount || 0;
+      map[key].revenue += t.total_amount ?? t.totalAmount ?? 0;
       map[key].count += 1;
     });
     return Object.values(map)
       .sort((a, b) => (a.month < b.month ? -1 : 1))
       .slice(-6); // 6 tháng gần nhất
-  }, [transactionHistory]);
+  }, [firebaseOrders]);
 
   const currentOrder =
     billMode === 'pending'
@@ -71,7 +86,7 @@ export default function PaymentDashboard() {
 
   const currentHistory =
     billMode === 'history'
-      ? transactionHistory.find((t) => String(t.id) === String(selectedHistoryId))
+      ? firebaseOrders.find((t) => String(t.id) === String(selectedHistoryId))
       : null;
 
   const calculateTotal = (items) => {
@@ -348,14 +363,14 @@ export default function PaymentDashboard() {
                 onChange={(e) => setSelectedHistoryId(e.target.value)}
               >
                 <option value="">-- Chọn hóa đơn đã thanh toán --</option>
-                {transactionHistory &&
-                  transactionHistory.length > 0 &&
-                  transactionHistory
+                {firebaseOrders &&
+                  firebaseOrders.length > 0 &&
+                  firebaseOrders
                     .slice()
                     .reverse()
                     .map((t) => (
                       <option key={t.id} value={t.id}>
-                        {`Bàn ${t.tableNumber} - ${new Date(t.timestamp).toLocaleString('vi-VN')}`}
+                        {`Bàn ${t.table_number ?? t.tableNumber} - ${new Date(t.timestamp).toLocaleString('vi-VN')}`}
                       </option>
                     ))}
               </select>
@@ -510,8 +525,8 @@ export default function PaymentDashboard() {
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-3 max-h-[450px] overflow-y-auto pr-1.5">
-              {transactionHistory && transactionHistory.length > 0 ? (
-                transactionHistory
+              {firebaseOrders && firebaseOrders.length > 0 ? (
+                firebaseOrders
                   .slice()
                   .reverse()
                   .map((t) => (
@@ -525,13 +540,13 @@ export default function PaymentDashboard() {
                       className="w-full text-left flex justify-between items-center p-3.5 bg-slate-50/70 border border-slate-100 rounded-xl hover:bg-white hover:shadow-sm transition-all"
                     >
                       <div>
-                        <p className="font-semibold text-slate-800 text-sm">Bàn {t.tableNumber}</p>
+                        <p className="font-semibold text-slate-800 text-sm">Bàn {t.table_number ?? t.tableNumber}</p>
                         <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">
                           {new Date(t.timestamp).toLocaleString('vi-VN')}
                         </p>
                       </div>
                       <span className="font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs">
-                        +{t.totalAmount.toLocaleString()}đ
+                        +{(t.total_amount ?? t.totalAmount ?? 0).toLocaleString()}đ
                       </span>
                     </button>
                   ))

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Trash2, Plus, Search, Filter, Edit, Eye, EyeOff } from 'lucide-react'
 import * as api from '@/data_access/api'
+import { useNavigate } from 'react-router-dom'
 
 export default function MenuManagement() {
   const [menuItems, setMenuItems] = useState([])
@@ -141,6 +142,25 @@ export default function MenuManagement() {
     })
     setEditingId(item.id)
     setIsEditDialogOpen(true)
+  }
+
+  const navigate = useNavigate()
+
+  const handleEditRecipe = async () => {
+    try {
+      const productId = editingId
+      if (!productId) return
+
+      // Fetch recipe entries and available ingredients
+      const recipes = await api.getRecipesForProduct(productId)
+      const ingredients = await api.getIngredients()
+
+      // Navigate to edit recipe page, pass fetched data via location state
+      navigate(`/menu/${productId}/recipe`, { state: { productId, recipes, ingredients, product: menuItems.find(i => i.id === productId) } })
+    } catch (err) {
+      console.error('Error fetching recipe data:', err)
+      alert('Failed to load recipe data')
+    }
   }
 
   const toggleAvailability = async (id) => {
@@ -403,6 +423,13 @@ export default function MenuManagement() {
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={handleEditRecipe}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Edit Recipe
+                  </Button>
                   <Button
                     onClick={handleAddItem}
                     className="flex-1 bg-blue-500 hover:bg-blue-600"

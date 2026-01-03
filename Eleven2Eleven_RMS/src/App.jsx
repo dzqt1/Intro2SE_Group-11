@@ -7,6 +7,7 @@ import { useAuth } from './contexts/AuthContext'
 import Orders from './pages/Order'
 import Login from './pages/Login'
 import MenuManagement from './pages/MenuManagement'
+import EditRecipe from './pages/EditRecipe'
 import Kitchen from "./pages/Kitchen"
 import { OrderProvider } from './contexts/OrderContext';
 import IngredientManagement from './pages/IngredientManagement'
@@ -39,6 +40,7 @@ function App() {
               <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
               <Route path="/users" element={<RequireAuth><UserManagement /></RequireAuth>} />
               <Route path="/menu" element={<RequireAuth><MenuManagement /></RequireAuth>} />
+              <Route path="/menu/:productId/recipe" element={<RequireAuth><EditRecipe /></RequireAuth>} />
               <Route path="/ingredients" element={<RequireAuth><IngredientManagement /></RequireAuth>} />
               <Route path="/kitchen" element={<RequireAuth><Kitchen /></RequireAuth>} />
               

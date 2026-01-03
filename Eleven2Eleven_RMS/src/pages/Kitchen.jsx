@@ -4,7 +4,7 @@ import { Button } from '../components/ui/button';
 import { CheckCircle2, Clock, DollarSign, Receipt, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 // Import API để lấy giá tiền và cập nhật trạng thái bàn
-import { getProducts, getTables, updateTable } from '../data_access/api';
+import { getProducts, getTables, updateTable, getIngredients } from '../data_access/api';
 
 export default function KitchenPage() {
   // Lấy thêm removeOrder, checkoutTable và downloadInvoice từ Context
@@ -19,14 +19,16 @@ export default function KitchenPage() {
   // Dữ liệu từ Server (để tra cứu giá và ID bàn)
   const [products, setProducts] = useState([]);
   const [tables, setTables] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
 
   // 1. Tải danh sách Sản phẩm (lấy giá) và Bàn (lấy ID)
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prods, tabs] = await Promise.all([getProducts(), getTables()]);
+        const [prods, tabs, ings] = await Promise.all([getProducts(), getTables(), getIngredients()]);
         setProducts(prods || []);
         setTables(tabs || []);
+        setIngredients(ings || [])
       } catch (err) {
         console.error("Lỗi tải dữ liệu:", err);
       }
@@ -40,8 +42,16 @@ export default function KitchenPage() {
     setSelectedTable(selectedTable === tableNumber ? null : tableNumber);
   };
 
-  const handleCompleteOrder = (tableNumber) => {
-    markPendingItemsAsCompleted(tableNumber);
+  const handleCompleteOrder = async (tableNumber) => {
+    try {
+      await markPendingItemsAsCompleted(tableNumber)
+      // refresh ingredient list after inventory update
+      const newIngs = await getIngredients()
+      setIngredients(newIngs || [])
+    } catch (err) {
+      console.error('Error completing order:', err)
+      alert('Có lỗi khi cập nhật nguyên liệu')
+    }
   };
 
   const getPendingItems = (items) => items.filter(item => !item.completed);

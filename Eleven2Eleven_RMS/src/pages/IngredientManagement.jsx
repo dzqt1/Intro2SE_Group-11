@@ -49,9 +49,11 @@ export default function IngredientManagement() {
 
   // Filter ingredients based on search
   const filteredIngredients = useMemo(() => {
-    return ingredients.filter(item =>
-      item.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const term = (searchTerm || '').toLowerCase()
+    return ingredients.filter(item => {
+      const name = item && item.name ? String(item.name).toLowerCase() : ''
+      return name.includes(term)
+    })
   }, [ingredients, searchTerm])
 
   const handleAddClick = () => {

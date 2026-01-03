@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/ui/button';
-import { Plus, Minus, X } from 'lucide-react';
+import { Plus, Minus, X, Lock } from 'lucide-react';
 import { useOrders } from '../contexts/OrderContext';
 import { Link } from 'react-router-dom';
 
@@ -55,6 +55,13 @@ export default function OrderPage() {
   };
 
   const removeOrderItem = (id) => {
+    const itemToRemove = orderItems.find(item => item.id === id);
+    
+    if (itemToRemove && itemToRemove.completed) {
+      alert("Món này đã được Bếp chế biến, không thể xóa!");
+      return;
+    }
+
     if (orderItems.length > 1) {
       setOrderItems(orderItems.filter(item => item.id !== id));
     }
@@ -139,12 +146,6 @@ export default function OrderPage() {
       alert("Không tìm thấy thông tin bàn!");
       return;
     }
-
-    if (currentTable.status !== 'Available') {
-      alert("Bàn đang được sử dụng.");
-      return;
-    }
-
     // Kiểm tra lịch đặt
     const conflictReservation = checkReservationConflict(currentTable.id);
     
@@ -326,69 +327,91 @@ export default function OrderPage() {
               </Button>
             </div>
 
-            {orderItems.map((item, index) => (
-              <div key={item.id} className="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1">
-                      <select
-                        value={item.dishName}
-                        onChange={(e) => updateDishName(item.id, e.target.value)}
-                        className="flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={loadingProducts}
-                      >
-                        <option value="" disabled>
-                          {loadingProducts ? "Đang tải menu..." : "Chọn món ăn"}
-                        </option>
-                        {products.map((product) => (
-                          <option key={product.id} value={product.name}>
-                            {product.name}
-                            {product.price ? ` - ${product.price.toLocaleString()}đ` : ''}
+            {orderItems.map((item, index) => {
+              const isLocked = item.completed; 
+
+              return (
+                <div key={item.id} className={`rounded-lg p-3 shadow-sm border ${isLocked ? 'bg-gray-100 border-gray-300' : 'bg-white border-slate-200'}`}>
+                  <div className="space-y-2">
+                    {/* Hàng 1: Tên món + Nút xóa */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 relative">
+                        <select
+                          value={item.dishName}
+                          onChange={(e) => updateDishName(item.id, e.target.value)}
+                          className={`flex h-9 w-full rounded-md border border-slate-200 px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-70 ${isLocked ? 'bg-gray-200 text-gray-600' : 'bg-white'}`}
+                          disabled={loadingProducts || isLocked} // Khóa nếu đã hoàn thành
+                        >
+                          <option value="" disabled>
+                            {loadingProducts ? "Đang tải menu..." : "Chọn món ăn"}
                           </option>
-                        ))}
-                      </select>
-                    </div>
-                    {orderItems.length > 1 && (
-                      <Button
-                        onClick={() => removeOrderItem(item.id)}
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-slate-600 text-xs flex-shrink-0 w-16">Số lượng:</span>
-                    <div className="flex items-center gap-2 flex-1">
-                      <Button
-                        onClick={() => updateQuantity(item.id, -1)}
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 flex-shrink-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-
-                      <div className="flex-1 text-center bg-slate-50 rounded-lg py-1.5 px-3 border border-slate-200 min-w-0">
-                        <span className="text-slate-800 text-sm">{item.quantity}</span>
+                          {products.map((product) => (
+                            <option key={product.id} value={product.name}>
+                              {product.name}
+                              {product.price ? ` - ${product.price.toLocaleString()}đ` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        
+                        {/* Hiển thị icon khóa nếu đã xong */}
+                        {isLocked && (
+                          <div className="absolute right-8 top-1/2 -translate-y-1/2 text-green-600 flex items-center gap-1 text-xs font-bold pointer-events-none">
+                             <Lock className="h-3 w-3" /> Đã xong
+                          </div>
+                        )}
                       </div>
 
-                      <Button
-                        onClick={() => updateQuantity(item.id, 1)}
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full border-2 border-blue-600 text-blue-600 hover:bg-blue-50 flex-shrink-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
+                      {/* Nút Xóa: Chỉ hiện khi chưa bị khóa */}
+                      {!isLocked && orderItems.length > 1 && (
+                        <Button
+                          onClick={() => removeOrderItem(item.id)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-slate-400 hover:text-red-500 hover:bg-red-50 flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {/* Nếu đã khóa thì hiện placeholder để căn chỉnh hoặc ẩn luôn */}
+                      {isLocked && orderItems.length > 1 && (
+                         <div className="h-9 w-9"></div> 
+                      )}
+                    </div>
+
+                    {/* Hàng 2: Số lượng */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-slate-600 text-xs flex-shrink-0 w-16">Số lượng:</span>
+                      <div className="flex items-center gap-2 flex-1">
+                        <Button
+                          onClick={() => updateQuantity(item.id, -1)}
+                          variant="outline"
+                          size="icon"
+                          disabled={isLocked} // Khóa nút giảm
+                          className={`h-8 w-8 rounded-full border-2 flex-shrink-0 ${isLocked ? 'border-gray-300 text-gray-400' : 'border-blue-600 text-blue-600 hover:bg-blue-50'}`}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+
+                        <div className={`flex-1 text-center rounded-lg py-1.5 px-3 border min-w-0 ${isLocked ? 'bg-gray-200 border-gray-300' : 'bg-slate-50 border-slate-200'}`}>
+                          <span className={`text-sm ${isLocked ? 'text-gray-600 font-bold' : 'text-slate-800'}`}>{item.quantity}</span>
+                        </div>
+
+                        <Button
+                          onClick={() => updateQuantity(item.id, 1)}
+                          variant="outline"
+                          size="icon"
+                          disabled={isLocked} // Khóa nút tăng
+                          className={`h-8 w-8 rounded-full border-2 flex-shrink-0 ${isLocked ? 'border-gray-300 text-gray-400' : 'border-blue-600 text-blue-600 hover:bg-blue-50'}`}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             <div className="space-y-2 pt-2">
               <Button

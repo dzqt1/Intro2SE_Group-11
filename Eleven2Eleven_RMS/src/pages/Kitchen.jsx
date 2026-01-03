@@ -137,9 +137,9 @@ export default function KitchenPage() {
         <div className="relative flex items-center justify-center max-w-2xl mx-auto">
           <h1 className="text-blue-600 text-lg font-bold">Kitchen Management</h1>
           <div className="absolute right-0">
-            <Link to="/kitchen">
+            <Link to="/ingredients">
               <Button variant="outline" size="sm" className="h-8 text-xs">
-                Xem Bếp
+                View Inventory
               </Button>
             </Link>
           </div>
@@ -150,7 +150,7 @@ export default function KitchenPage() {
         {savedOrders.length === 0 ? (
           <div className="bg-white rounded-lg p-8 shadow-sm border border-slate-200 text-center">
             <Clock className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-500">Hiện không có đơn đặt món</p>
+            <p className="text-slate-500">No orders currently</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -173,7 +173,7 @@ export default function KitchenPage() {
                       <div className="text-left">
                         <h3 className="text-slate-800 text-sm">{order.tableNumber}</h3>
                         <p className="text-xs text-slate-500">
-                          {isAllCompleted ? 'Sẵn sàng thanh toán' : `${pendingItems.length} món chờ làm`}
+                          {isAllCompleted ? 'Ready to Pay' : `${pendingItems.length} items pending`}
                         </p>
                       </div>
                     </div>
@@ -190,10 +190,10 @@ export default function KitchenPage() {
                       <div className="p-4 space-y-2">
                         {isAllCompleted ? (
                            <div className="text-center py-2 text-green-600 text-sm flex items-center justify-center gap-2">
-                             <CheckCircle2 className="h-4 w-4"/> Tất cả món đã hoàn tất
+                             <CheckCircle2 className="h-4 w-4"/> All items completed
                            </div>
                         ) : (
-                          <h4 className="text-xs text-slate-500 mb-3">Danh sách món:</h4>
+                          <h4 className="text-xs text-slate-500 mb-3">Order Items:</h4>
                         )}
                         
                         {order.items.map((item, index) => (
@@ -201,7 +201,7 @@ export default function KitchenPage() {
                             <div className="flex-1">
                               <p className="text-slate-800 text-sm font-medium">{item.dishName}</p>
                               <p className="text-xs text-slate-500">
-                                {item.completed ? <span className="text-green-600">Đã xong</span> : <span className="text-amber-600">Đang chờ</span>}
+                                {item.completed ? <span className="text-green-600">Completed</span> : <span className="text-amber-600">Pending</span>}
                               </p>
                             </div>
                             <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export default function KitchenPage() {
                             className="col-span-2 h-10 bg-green-600 hover:bg-green-700 text-sm"
                           >
                             <CheckCircle2 className="h-4 w-4 mr-2" />
-                            Hoàn Thành Món
+                            
                           </Button>
                         )}
                         
@@ -231,7 +231,7 @@ export default function KitchenPage() {
                           className={`h-10 text-sm ${!isAllCompleted ? 'col-span-2 bg-slate-400' : 'col-span-2 bg-blue-600 hover:bg-blue-700'}`}
                         >
                           <Receipt className="h-4 w-4 mr-2" />
-                          Thanh Toán & Trả Bàn
+                          Pay & Clear Table
                         </Button>
                       </div>
                     </div>
@@ -250,7 +250,7 @@ export default function KitchenPage() {
             {/* Modal Header */}
             <div className="bg-blue-600 p-4 flex items-center justify-between text-white">
               <h2 className="font-bold text-lg flex items-center gap-2">
-                <Receipt className="h-5 w-5" /> Hóa Đơn Tạm Tính
+                <Receipt className="h-5 w-5" /> Temporary Invoice
               </h2>
               <button onClick={() => setShowInvoice(false)} className="hover:bg-blue-700 p-1 rounded-full">
                 <X className="h-5 w-5" />
@@ -267,9 +267,9 @@ export default function KitchenPage() {
               <div className="space-y-4">
                 <div className="border-b border-slate-200 pb-2 mb-2">
                   <div className="grid grid-cols-12 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                    <div className="col-span-6">Món</div>
-                    <div className="col-span-2 text-center">SL</div>
-                    <div className="col-span-4 text-right">Thành tiền</div>
+                    <div className="col-span-6">Item</div>
+                    <div className="col-span-2 text-center">Qty</div>
+                    <div className="col-span-4 text-right">Total</div>
                   </div>
                 </div>
 
@@ -280,7 +280,7 @@ export default function KitchenPage() {
                       <div className="col-span-6 font-medium text-slate-700">{item.dishName}</div>
                       <div className="col-span-2 text-center text-slate-500">x{item.quantity}</div>
                       <div className="col-span-4 text-right text-slate-700">
-                        {(price * item.quantity).toLocaleString()}đ
+                        {(price * item.quantity).toLocaleString()}$
                       </div>
                     </div>
                   );
@@ -288,9 +288,9 @@ export default function KitchenPage() {
 
                 <div className="border-t border-slate-200 pt-4 mt-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold text-slate-800">Tổng cộng:</span>
+                    <span className="text-lg font-bold text-slate-800">Total:</span>
                     <span className="text-xl font-bold text-blue-600">
-                      {invoiceData.totalAmount.toLocaleString()}đ
+                      {invoiceData.totalAmount.toLocaleString()}$
                     </span>
                   </div>
                 </div>
@@ -304,14 +304,14 @@ export default function KitchenPage() {
                 variant="outline" 
                 className="flex-1"
               >
-                Hủy bỏ
+                Cancel
               </Button>
               <Button 
                 onClick={handleConfirmPayment}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 <DollarSign className="h-4 w-4 mr-2" />
-                Xác nhận
+                Confirm
               </Button>
             </div>
           </div>

@@ -148,10 +148,10 @@ export default function PaymentDashboard() {
     <div className="p-10 w-full bg-slate-50 overflow-y-auto h-screen">
       <div className="mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">
-          Thanh toán & Dashboard Doanh thu
+          Payment & Dashboard
         </h1>
         <p className="text-sm md:text-base text-slate-500 mt-2 max-w-2xl mx-auto">
-          Theo dõi doanh thu, xuất hóa đơn cho bàn đang dùng và xem lại các hóa đơn đã thanh toán.
+          Track revenue, print invoices for active tables, and review past paid invoices.
         </p>
       </div>
 
@@ -161,13 +161,13 @@ export default function PaymentDashboard() {
           <CardContent className="pt-6 pb-6 flex items-center justify-between">
             <div className="flex-1 text-center md:text-left">
               <p className="opacity-90 text-xs md:text-sm font-medium uppercase tracking-wider">
-                Tổng doanh thu
+                Total Revenue
               </p>
               <h2 className="text-3xl md:text-5xl font-extrabold mt-2">
-                {totalRevenue.toLocaleString()}đ
+                {totalRevenue.toLocaleString()}
               </h2>
               <p className="text-[11px] md:text-xs opacity-75 mt-1">
-                Tổng cộng tất cả hóa đơn đã được thanh toán
+                Total of all paid invoices
               </p>
             </div>
             <div className="flex flex-col items-end gap-2">
@@ -182,12 +182,12 @@ export default function PaymentDashboard() {
           <CardContent className="pt-6 pb-6 flex items-center justify-between">
             <div className="flex-1 text-center md:text-left">
               <p className="text-slate-500 text-xs md:text-sm font-medium uppercase tracking-wider">
-                Hóa đơn đã thanh toán
+                Paid Invoices
               </p>
               <h2 className="text-3xl md:text-5xl font-extrabold text-slate-800 mt-2">
                 {totalBills}
               </h2>
-              <p className="text-[11px] md:text-xs text-slate-400 mt-1">Số lượt checkout thành công</p>
+              <p className="text-[11px] md:text-xs text-slate-400 mt-1">Number of successful checkouts</p>
             </div>
             <div className="flex flex-col items-end gap-2">
               <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-50 to-emerald-100 flex items-center justify-center border border-emerald-100">
@@ -204,13 +204,13 @@ export default function PaymentDashboard() {
         <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm md:text-base font-semibold text-slate-800">
-              Doanh thu 7 ngày gần nhất
+              Revenue in the Last 7 Days
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
             {dailyStats.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">
-                Chưa có dữ liệu để hiển thị.
+                No data available to display.
               </p>
             ) : (
               <div className="h-52 flex gap-3 md:gap-4">
@@ -238,7 +238,7 @@ export default function PaymentDashboard() {
                         })}
                       </span>
                       <span className="text-[10px] text-slate-700 font-semibold">
-                        {d.revenue.toLocaleString()}đ
+                        {d.revenue.toLocaleString()}$
                       </span>
                     </div>
                   );
@@ -252,13 +252,13 @@ export default function PaymentDashboard() {
         <Card className="rounded-2xl border border-slate-100 bg-white shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm md:text-base font-semibold text-slate-800">
-              Số lượng hóa đơn theo tháng
+              Number of Invoices by Month
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-2">
             {monthlyStats.length === 0 ? (
               <p className="text-xs text-slate-400 py-6 text-center">
-                Chưa có dữ liệu để hiển thị.
+                No data available to display.
               </p>
             ) : (
               <div className="h-52 flex gap-3 md:gap-4">
@@ -281,10 +281,10 @@ export default function PaymentDashboard() {
                         />
                       </div>
                       <span className="mt-1 text-slate-500">
-                        {`T${Number(month)}-${year.slice(2)}`}
+                        {`${Number(month)}-${year.slice(2)}`}
                       </span>
                       <span className="text-[10px] text-slate-700 font-semibold">
-                        {m.count} đơn
+                        {m.count} invoices
                       </span>
                     </div>
                   );
@@ -305,9 +305,9 @@ export default function PaymentDashboard() {
                   <Receipt className="text-emerald-600 h-5 w-5" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-semibold">Xuất hóa đơn bàn</span>
+                  <span className="text-sm font-semibold">Print Table Invoice</span>
                   <span className="text-[11px] text-slate-400">
-                    Thanh toán bàn đang dùng hoặc xem lại hóa đơn cũ
+                    Pay for active tables or review past invoices
                   </span>
                 </div>
               </div>
@@ -326,7 +326,7 @@ export default function PaymentDashboard() {
                   billMode === 'pending' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500'
                 }`}
               >
-                Đơn đang chờ
+                Pending Orders
               </button>
               <button
                 type="button"
@@ -338,7 +338,7 @@ export default function PaymentDashboard() {
                   billMode === 'history' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-500'
                 }`}
               >
-                Hóa đơn đã thanh toán
+                Paid Invoices
               </button>
             </div>
 
@@ -349,10 +349,10 @@ export default function PaymentDashboard() {
                 value={selectedTable}
                 onChange={(e) => setSelectedTable(e.target.value)}
               >
-                <option value="">-- Chọn bàn đang chờ thanh toán --</option>
+                <option value="">-- Select pending table --</option>
                 {savedOrders?.map((o) => (
                   <option key={o.tableNumber} value={o.tableNumber}>
-                    Bàn số: {o.tableNumber}
+                    Table: {o.tableNumber}
                   </option>
                 ))}
               </select>
@@ -362,7 +362,7 @@ export default function PaymentDashboard() {
                 value={selectedHistoryId}
                 onChange={(e) => setSelectedHistoryId(e.target.value)}
               >
-                <option value="">-- Chọn hóa đơn đã thanh toán --</option>
+                <option value="">-- Select paid invoice --</option>
                 {firebaseOrders &&
                   firebaseOrders.length > 0 &&
                   firebaseOrders
@@ -370,7 +370,7 @@ export default function PaymentDashboard() {
                     .reverse()
                     .map((t) => (
                       <option key={t.id} value={t.id}>
-                        {`Bàn ${t.table_number ?? t.tableNumber} - ${new Date(t.timestamp).toLocaleString('vi-VN')}`}
+                        {`Table ${t.table_number ?? t.tableNumber} - ${new Date(t.timestamp).toLocaleString('vi-VN')}`}
                       </option>
                     ))}
               </select>
@@ -383,7 +383,7 @@ export default function PaymentDashboard() {
                   <div className="text-center mb-4">
                     <h3 className="font-black text-xl tracking-wide text-slate-900">RESTAURANT BILL</h3>
                     <p className="text-[11px] text-slate-500 uppercase mt-1">
-                      Bàn: <span className="font-semibold text-slate-700">{selectedTable}</span>
+                      Table: <span className="font-semibold text-slate-700">{selectedTable}</span>
                     </p>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       {new Date().toLocaleString('vi-VN')}
@@ -401,7 +401,7 @@ export default function PaymentDashboard() {
                             <span className="text-xs text-slate-400"> x{item.quantity}</span>
                           </span>
                           <span className="font-semibold text-slate-800">
-                            {lineTotal.toLocaleString()}đ
+                            {lineTotal.toLocaleString()}$
                           </span>
                         </div>
                       );
@@ -409,9 +409,9 @@ export default function PaymentDashboard() {
                   </div>
 
                   <div className="border-t border-slate-300 mt-4 pt-4 flex justify-between items-center">
-                    <span className="font-semibold text-sm text-slate-700">TỔNG CỘNG</span>
+                    <span className="font-semibold text-sm text-slate-700">TOTAL</span>
                     <span className="font-extrabold text-2xl text-blue-600">
-                      {calculateTotal(currentOrder.items).toLocaleString()}đ
+                      {calculateTotal(currentOrder.items).toLocaleString()}$
                     </span>
                   </div>
 
@@ -419,12 +419,12 @@ export default function PaymentDashboard() {
                     className="w-full mt-6 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-xl transition-all text-sm tracking-wide"
                     onClick={handlePayment}
                   >
-                    XÁC NHẬN THANH TOÁN
+                    CONFIRM PAYMENT
                   </Button>
                 </div>
               ) : (
                 <div className="text-center py-10 text-slate-400 border-2 border-dashed rounded-2xl bg-slate-50/60 text-sm">
-                  Vui lòng chọn bàn đang chờ để hiển thị chi tiết hóa đơn
+                  Please select a pending table to display the invoice details
                 </div>
               )
             ) : currentHistory ? (
@@ -432,14 +432,14 @@ export default function PaymentDashboard() {
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-xs font-semibold uppercase text-indigo-500 tracking-wider">
-                      HÓA ĐƠN ĐÃ THANH TOÁN
+                      PAID INVOICES
                     </p>
                     <h3 className="font-black text-xl text-slate-900 mt-1">
-                      Bàn {currentHistory.tableNumber}
+                      Table {currentHistory.tableNumber}
                     </h3>
                   </div>
                   <span className="px-3 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                    ĐÃ THANH TOÁN
+                    PAID
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400 mb-4">
@@ -457,7 +457,7 @@ export default function PaymentDashboard() {
                           <span className="text-xs text-slate-400"> x{item.quantity}</span>
                         </span>
                         <span className="font-semibold text-slate-800">
-                          {lineTotal.toLocaleString()}đ
+                          {lineTotal.toLocaleString()}$
                         </span>
                       </div>
                     );
@@ -465,15 +465,15 @@ export default function PaymentDashboard() {
                 </div>
 
                 <div className="border-t border-slate-200 mt-4 pt-4 flex justify-between items-center">
-                  <span className="font-semibold text-sm text-slate-700">TỔNG CỘNG</span>
+                  <span className="font-semibold text-sm text-slate-700">TOTAL</span>
                   <span className="font-extrabold text-2xl text-indigo-600">
-                    {currentHistory.totalAmount.toLocaleString()}đ
+                    {currentHistory.totalAmount.toLocaleString()}$
                   </span>
                 </div>
 
                 <div className="mt-4 flex flex-col items-center gap-2">
                   <p className="text-[11px] text-slate-400 text-center">
-                    Đây là bản xem lại hóa đơn. Bạn có thể in lại hóa đơn bằng nút bên dưới.
+                    This is a review of the invoice. You can reprint the invoice using the button below.
                   </p>
                   <Button
                     type="button"
@@ -493,18 +493,18 @@ export default function PaymentDashboard() {
                           };
                         }),
                         totalAmount: total,
-                        date: new Date(currentHistory.timestamp).toLocaleString('vi-VN'),
+                        date: new Date(currentHistory.timestamp).toLocaleString('en-US'),
                       };
                       downloadInvoice(invoiceForPrint);
                     }}
                   >
-                    In lại hóa đơn
+                    Reprint Invoice
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="text-center py-10 text-slate-400 border-2 border-dashed rounded-2xl bg-slate-50/60 text-sm">
-                Chọn một hóa đơn trong lịch sử để xem lại chi tiết.
+                Please select an invoice from the history to review the details.
               </div>
             )}
           </CardContent>
@@ -518,8 +518,8 @@ export default function PaymentDashboard() {
                 <History className="text-blue-600 h-5 w-5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-semibold">Lịch sử giao dịch gần đây</span>
-                <span className="text-[11px] text-slate-400">Danh sách các hóa đơn mới nhất</span>
+                <span className="text-sm font-semibold">Recent Transaction History</span>
+                <span className="text-[11px] text-slate-400">List of the latest invoices</span>
               </div>
             </CardTitle>
           </CardHeader>
@@ -540,19 +540,19 @@ export default function PaymentDashboard() {
                       className="w-full text-left flex justify-between items-center p-3.5 bg-slate-50/70 border border-slate-100 rounded-xl hover:bg-white hover:shadow-sm transition-all"
                     >
                       <div>
-                        <p className="font-semibold text-slate-800 text-sm">Bàn {t.table_number ?? t.tableNumber}</p>
+                        <p className="font-semibold text-slate-800 text-sm">Table {t.table_number ?? t.tableNumber}</p>
                         <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">
-                          {new Date(t.timestamp).toLocaleString('vi-VN')}
+                          {new Date(t.timestamp).toLocaleString('en-US')}
                         </p>
                       </div>
                       <span className="font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs">
-                        +{(t.total_amount ?? t.totalAmount ?? 0).toLocaleString()}đ
+                        +{(t.total_amount ?? t.totalAmount ?? 0).toLocaleString()}$
                       </span>
                     </button>
                   ))
               ) : (
                 <p className="text-center text-slate-400 py-10 italic text-sm">
-                  Chưa có giao dịch nào được thực hiện
+                  No transactions have been made yet
                 </p>
               )}
             </div>

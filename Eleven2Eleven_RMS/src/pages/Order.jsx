@@ -253,7 +253,7 @@ export default function OrderPage() {
           <div className="absolute right-0">
             <Link to="/kitchen">
               <Button variant="outline" size="sm" className="h-8 text-xs">
-                Xem Bếp
+                View Kitchen
               </Button>
             </Link>
           </div>
@@ -265,7 +265,7 @@ export default function OrderPage() {
         {/* Table Number Section */}
         <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200 mb-4">
           <label className="text-slate-700 text-sm block mb-2">
-            Chọn Bàn
+            Select Table
           </label>
           
           <select
@@ -275,16 +275,16 @@ export default function OrderPage() {
             disabled={isTableConfirmed || loadingTables}
           >
             <option value="" disabled>
-              {loadingTables ? "Đang tải danh sách bàn..." : "Chọn số bàn"}
+              {loadingTables ? "Loading tables..." : "Select a table"}
             </option>
             {tables.map((table) => (
               <option 
                 key={table.id} 
-                value={table.name || `Bàn ${table.id}`}
+                value={table.name || `Table ${table.id}`}
                 // Hiển thị thêm trạng thái trong dropdown để dễ nhìn
                 className={table.status !== 'Available' ? 'text-red-500' : 'text-green-600'}
               >
-                {table.name || `Bàn ${table.id}`} ({table.status === 'Available' ? 'Trống' : 'Có khách'})
+                {table.name || `Table ${table.id}`} ({table.status === 'Available' ? 'Available' : 'Occupied'})
               </option>
             ))}
           </select>
@@ -294,18 +294,18 @@ export default function OrderPage() {
               onClick={handleTableConfirm}
               className="w-full h-9 bg-blue-600 hover:bg-blue-700 text-sm mt-3"
             >
-              Xác Nhận Bàn
+              Confirm Table
             </Button>
           ) : (
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-blue-600 text-sm">✓ Đã xác nhận: {tableNumber}</span>
+              <span className="text-blue-600 text-sm">✓ Confirmed: {tableNumber}</span>
               <Button
                 onClick={() => setIsTableConfirmed(false)}
                 variant="ghost"
                 size="sm"
                 className="text-slate-500 hover:text-slate-700 text-xs h-7"
               >
-                Đổi bàn
+                Change Table
               </Button>
             </div>
           )}
@@ -315,7 +315,7 @@ export default function OrderPage() {
         {isTableConfirmed && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h2 className="text-slate-700 text-sm">Danh Sách Món</h2>
+              <h2 className="text-slate-700 text-sm">Order Items</h2>
               <Button
                 onClick={addOrderItem}
                 variant="outline"
@@ -323,7 +323,7 @@ export default function OrderPage() {
                 className="border-blue-300 text-blue-600 hover:bg-blue-50 h-8 text-xs"
               >
                 <Plus className="h-3 w-3 mr-1" />
-                Thêm Món
+                Add Item
               </Button>
             </div>
 
@@ -343,12 +343,12 @@ export default function OrderPage() {
                           disabled={loadingProducts || isLocked} // Khóa nếu đã hoàn thành
                         >
                           <option value="" disabled>
-                            {loadingProducts ? "Đang tải menu..." : "Chọn món ăn"}
+                            {loadingProducts ? "Loading menu..." : "Select a dish"}
                           </option>
                           {products.map((product) => (
                             <option key={product.id} value={product.name}>
                               {product.name}
-                              {product.price ? ` - ${product.price.toLocaleString()}đ` : ''}
+                              {product.price ? ` - ${product.price.toLocaleString()}$` : ''}
                             </option>
                           ))}
                         </select>
@@ -356,7 +356,7 @@ export default function OrderPage() {
                         {/* Hiển thị icon khóa nếu đã xong */}
                         {isLocked && (
                           <div className="absolute right-8 top-1/2 -translate-y-1/2 text-green-600 flex items-center gap-1 text-xs font-bold pointer-events-none">
-                             <Lock className="h-3 w-3" /> Đã xong
+                             <Lock className="h-3 w-3" /> Completed
                           </div>
                         )}
                       </div>
@@ -381,7 +381,7 @@ export default function OrderPage() {
 
                     {/* Hàng 2: Số lượng */}
                     <div className="flex items-center gap-2">
-                      <span className="text-slate-600 text-xs flex-shrink-0 w-16">Số lượng:</span>
+                      <span className="text-slate-600 text-xs flex-shrink-0 w-16">Quantity:</span>
                       <div className="flex items-center gap-2 flex-1">
                         <Button
                           onClick={() => updateQuantity(item.id, -1)}
@@ -418,7 +418,7 @@ export default function OrderPage() {
                 onClick={handleConfirmOrder}
                 className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-sm"
               >
-                Xác Nhận Đơn Hàng
+                Confirm Order
               </Button>
 
               <Button
@@ -426,7 +426,7 @@ export default function OrderPage() {
                 variant="outline"
                 className="w-full h-10 border-2 border-slate-300 text-slate-700 hover:bg-slate-50 text-sm"
               >
-                Làm Mới
+                Reset
               </Button>
             </div>
           </div>

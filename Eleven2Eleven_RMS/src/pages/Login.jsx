@@ -58,15 +58,15 @@ function Login() {
             
             const serverMessage = err.message || "";
 
-            if (serverMessage.includes("User not found") || serverMessage.includes("tồn tại")) {
-                setError("Tài khoản không tồn tại trong hệ thống.");
+            if (serverMessage.includes("User not found") || serverMessage.includes("exist")) {
+                setError("Account does not exist in the system.");
             } 
-            else if (serverMessage.includes("Wrong password") || serverMessage.includes("mật khẩu")) {
-                setError("Mật khẩu không đúng. Vui lòng thử lại.");
+            else if (serverMessage.includes("Wrong password") || serverMessage.includes("password")) {
+                setError("Incorrect password. Please try again.");
             } 
             else {
                 // Lỗi chung chung (Mất mạng, lỗi server 500...)
-                setError("Đăng nhập thất bại. Mật khẩu không chính xác.");
+                setError("Login failed. Please try again later.");
             }
         }
     }
@@ -81,7 +81,7 @@ function Login() {
         <main className="w-full max-w-lg h-100 mx-auto mt-10 p-6 border border-gray-300 rounded-lg shadow-md bg-white">
             <form onSubmit={handleLogin}>
                 <h1 className="text-2xl font-bold mb-6 text-center text-slate-800">
-                    Đăng Nhập
+                    Login
                 </h1>
 
                 {/* --- KHU VỰC HIỂN THỊ LỖI (DÒNG CHỮ ĐỎ) --- */}
@@ -96,8 +96,8 @@ function Login() {
                 <FieldSet>
                     <FieldGroup>
                         <Field>
-                            <FieldLabel htmlFor="username">Tên đăng nhập</FieldLabel>
-                            <Input
+                            <FieldLabel htmlFor="username">Username</FieldLabel>
+                            <Input 
                                 id="username"
                                 value={username}
                                 onChange={(e) => {
@@ -105,14 +105,14 @@ function Login() {
                                     // Mẹo UX: Khi người dùng bắt đầu sửa lại, nên ẩn lỗi đi ngay
                                     if (error) setError("") 
                                 }}
-                                placeholder="Nhập tên đăng nhập..."
+                                placeholder="Enter your username..."
                                 // Thêm viền đỏ vào ô input nếu đang có lỗi
                                 className={error ? "border-red-500 focus:ring-red-500" : ""}
                             />
                         </Field>
                         
                         <Field>
-                            <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
+                            <FieldLabel htmlFor="password">Password</FieldLabel>
                             <Input
                                 id="password"
                                 type="password"
@@ -121,7 +121,7 @@ function Login() {
                                     setPassword(e.target.value)
                                     if (error) setError("")
                                 }}
-                                placeholder="Nhập mật khẩu..."
+                                placeholder="Enter your password..."
                                 className={error ? "border-red-500 focus:ring-red-500" : ""}
                             />
                         </Field>
@@ -129,12 +129,12 @@ function Login() {
                         <div className="flex items-center gap-2 mt-2">
                             <Checkbox id="remember" checked={remember} onCheckedChange={(v) => setRemember(!!v)} />
                             <label htmlFor="remember" className="text-sm cursor-pointer select-none text-slate-600">
-                                Ghi nhớ đăng nhập
+                                Remember Me
                             </label>
                         </div>
 
                         <Button type="submit" className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2">
-                            Đăng Nhập
+                            Login
                         </Button>
                     </FieldGroup>
                 </FieldSet>
